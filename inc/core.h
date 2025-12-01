@@ -1,0 +1,26 @@
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <inttypes.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+#include <ucontext.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <malloc.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <getopt.h>
+#include <libgen.h>
+#include <sys/file.h>
+#include <sys/user.h>
+#include <sys/ptrace.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <elf.h>
+
+#include <stdint.h>
+#include <stdbool.h>
