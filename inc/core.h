@@ -21,6 +21,22 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <elf.h>
+#include <inttypes.h>
+#include <stdint.h>
+#include <string.h>
+#include <unistd.h>
+#include <time.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <signal.h>
+#include <sched.h>
+#include <sys/time.h>
+#include <sys/stat.h>
+#include <pthread.h>
 
 #include <stdint.h>
 #include <stdbool.h>
