@@ -10,7 +10,49 @@ struct Worker {
     int busy; //flag
     int file_number;
     time_t start_time; 
+    char last_msg[64]; // Last missions
+    int jobs_done;
 };
+
+void refresh_dashboard(struct Worker *workers, int processed, int max, int active) {
+    printf("\033[H\033[2J"); // Refresh Screen
+
+    printf("==================== (Dashboard) ====================\n");
+    printf("    Overall progress:[");
+    int width = 40;
+    int pos = (processed * width) / max;
+    for(int i = 0 ; i < width ; ++i) {
+        if(i < pos) printf("#");
+        else printf(" ");
+    }
+    printf("] %d/%d (Active Core: %d)\n", processed, max, active);
+    printf("====================================================================\n");
+    printf(" Core | PID   | Processing    | Elapsed  | Total | Status/Last Message \n");
+    printf("------+-------+-------------+-------+------+------------------------\n");
+
+    time_t now = time(NULL);
+
+    for(int i = 0 ; i < NUM_CORES ; i++) {
+        struct Worker *w = &workers[i];
+
+        if(w->busy){
+            int elapsed = now - w->start_time;
+
+            char *color = "\033[0m";                     // White
+            if (elapsed > 3600) color = "\033[31m";      // Red
+            else if (elapsed > 60) color = "\033[33m";   // Yellow
+
+            printf("  %-3d | %-5d | res%-5d.txt | %s%4ds\033[0m  | %-4d | \033[36mProccessing..\033[0m\n", 
+                w->core_id, w->pid, w->file_number, color, elapsed, w->jobs_done);
+        } else {
+            // Idle state demonstrate last message
+            printf("  %-3d | ----- | ----------- |  ---  | %-4d | %s\n", 
+                   w->core_id, w->jobs_done, w->last_msg);
+        }
+    }
+    printf("====================================================================\n");
+    fflush(stdout);
+}
 
 int main() {
     if(access("./worker", X_OK) != 0) {
@@ -24,13 +66,12 @@ int main() {
         workers[i].core_id = i;
         workers[i].busy = 0;
         workers[i].file_number = -1;
+        workers[i].jobs_done = 0;
+        sprintf(workers[i].last_msg, "Starting...");
     }
 
     int files_processed = 0;
     int current_file = 0;
-    time_t last_status_print = time(NULL);
-
-    printf("Testing using %d CPU cores\n", NUM_CORES);
 
     while(files_processed < MAX_FILES || current_file < MAX_FILES) {
         for(int w = 0; w < NUM_CORES; w++) {
@@ -39,7 +80,7 @@ int main() {
                 snprintf(input_filename, sizeof(input_filename), "results_A32/res%d.txt", current_file);
                 
                 if(access(input_filename, R_OK) != 0) {
-                    printf("File %s Not exist!\n", input_filename);
+                    snprintf(workers[w].last_msg, 64, "\033[33mEscape(No File): %d\033[0m", current_file);
                     current_file++;
                     continue;
                 }
@@ -66,7 +107,6 @@ int main() {
                     workers[w].file_number = current_file;
                     workers[w].start_time = time(NULL);
                     
-                    printf("Assign file res%d.txt to Core %d (PID: %d)\n", current_file, workers[w].core_id, pid);
                     current_file++;
                 }
             }
@@ -79,12 +119,10 @@ int main() {
                 
                 // Detect timeout for 2 hours
                 if(elapsed > 7200) {
-                    printf("\n[Core %d]  Processing file res%d.txt timed out (>2h)，terminating process PID:%d\n", 
-                           workers[w].core_id, workers[w].file_number, workers[w].pid);
-                    
                     kill(workers[w].pid, SIGKILL);
                     waitpid(workers[w].pid, NULL, 0);
                     
+                    snprintf(workers[w].last_msg, 64, "\033[31mTimeOut Terminate res%d\033[0m", workers[w].file_number);
                     workers[w].pid = -1;
                     workers[w].busy = 0;
                     workers[w].file_number = -1;
@@ -101,6 +139,7 @@ int main() {
                     time_t file_age = current_time - st.st_mtime;
                     // File hasn't been update for 10 min
                     if (file_age > 600 && elapsed > 60) {
+                        // FIXME: delete this printf?
                         printf("\n[Warning][Core %d] res%d.txt may be stuck(file %ld seconds not updating) PID:%d\n",
                                workers[w].core_id, workers[w].file_number, file_age, workers[w].pid);
                     }
@@ -111,22 +150,17 @@ int main() {
                 
                 if(result > 0) {
                     // Chile process compeleted
-                    printf("\n");
                     if(WIFEXITED(status)) {
                         int exit_code = WEXITSTATUS(status);
                         if(exit_code == 0) {
-                            printf("[Core %d] compelete res%d.txt (Elapse: %ds)\n", 
-                                   workers[w].core_id, workers[w].file_number, elapsed);
+                            snprintf(workers[w].last_msg, 64, "\033[32mCompeleted res%d\033[0m", workers[w].file_number);
                         } else if(exit_code == 10) {
-                            printf("[Core %d] ✗ res%d.txt consecutive SIGSEGV (Elapse: %ds)\n", 
-                                   workers[w].core_id, workers[w].file_number, elapsed);
+                            snprintf(workers[w].last_msg, 64, "\033[31mCrashOut(SEGV) res%d\033[0m", workers[w].file_number);
                         } else {
-                            printf("[Core %d] ✗ res%d.txt failed (Exit:%d, Elapse: %ds)\n", 
-                                   workers[w].core_id, workers[w].file_number, exit_code, elapsed);
+                            snprintf(workers[w].last_msg, 64, "\033[31mFailed(Exit:%d) res%d\033[0m", exit_code, workers[w].file_number);
                         }
                     } else {
-                        printf("[Core %d] ✗ res%d.txt Terminated\n", 
-                               workers[w].core_id, workers[w].file_number);
+                        snprintf(workers[w].last_msg, 64, "\033[31mTerminated res%d\033[0m", workers[w].file_number);
                     }
                     
                     workers[w].pid = -1;
@@ -137,8 +171,16 @@ int main() {
             }
         }
 
-        usleep(500000); // 500ms
+        int active_workers = 0;
+        for(int i=0; i<NUM_CORES; i++) if(workers[i].busy) active_workers++;
+        
+        refresh_dashboard(workers, files_processed, MAX_FILES, active_workers);
+
+        usleep(200000);
+
     }
     
+    printf("\n\nAll File Process Done! Total: %d files\n", files_processed);
+
     return 0;
 }
