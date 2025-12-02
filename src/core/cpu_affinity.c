@@ -9,5 +9,8 @@ int set_cpu_affinity(pid_t pid, int core_id) {
         perror("Setting CPU affinity failed");
         return -1;
     }
+
+    mlockall(MCL_CURRENT | MCL_FUTURE);
+
     return 0;
 }
