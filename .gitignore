@@ -54,10 +54,15 @@ dkms.conf
 # debug information files
 *.dwo
 
-.vscode
-dispatcher
-worker
-res/phase_1/bitmap_results
-res/phase_1/decoded_ranges
+# Ignore VSCode settings
+.vscode/
+
+# Ignore executables (files without extension)
+*
+!*/          # allow directories
+!*.*         # allow files with an extension
+
+res/phase_1/bitmap_results/
+res/phase_1/decoded_ranges/
 *.bin
 *.txt
