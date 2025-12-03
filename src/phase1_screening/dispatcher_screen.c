@@ -1,7 +1,7 @@
 #include "core.h"
 #include "cpu_affinity.h"
 
-#define NUM_CORES 1 // Specify the number of cores to use by including the -d option in the compilation parameters.
+#define NUM_CORES 4 // Specify the number of cores to use by including the -d option in the compilation parameters.
 #define MAX_FILES 256
 
 struct Worker {
