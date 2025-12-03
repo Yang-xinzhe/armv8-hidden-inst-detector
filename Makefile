@@ -7,11 +7,11 @@ CFLAGS			:=	-std=c11 -Wall -Wextra -O2 \
            			-Iinc \
 					-DNUM_CORES=$(NUM_CORES)
 
-DISPATCHER		:=	dispatcher_screen
-WORKER			:=	worker_screen
+DISPATCHER		:=	dispatcher
+WORKER			:=	worker
 
 
-COMMON_SRC		:= src/core/cpu_affinity.c	src/core/sandbox.c
+COMMON_SRC		:= src/core/cpu_affinity.c	src/core/sandbox.c src/core/bitmap.c
 DISPATCHER_SRCS	:= src/phase1_screening/dispatcher_screen.c $(COMMON_SRC)
 WORKER_SRCS		:= src/phase1_screening/worker_screen.c		$(COMMON_SRC)
 
@@ -20,10 +20,10 @@ WORKER_SRCS		:= src/phase1_screening/worker_screen.c		$(COMMON_SRC)
 all:	$(DISPATCHER) $(WORKER)
 
 $(DISPATCHER): $(DISPATCHER_SRCS)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $(DISPATCHER)
 
 $(WORKER): $(WORKER_SRCS)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $(WORKER)
 
 clean:
 	rm -f $(DISPATCHER) $(WORKER)
