@@ -40,7 +40,7 @@ void signal_handler(int sig_num, siginfo_t *sig_info, void *uc_ptr)
     }
 
     // Jump to the next instruction (i.e. skip the illegal insn)
-    uintptr_t insn_skip = (uintptr_t)(insn_page) + (insn_offset+1)*4;
+    // uintptr_t insn_skip = (uintptr_t)(insn_page) + (insn_offset+1)*4;
 
     // //aarch32
     // uc->uc_mcontext.arm_pc = insn_skip;
