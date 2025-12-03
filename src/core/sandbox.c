@@ -1,5 +1,27 @@
 #include "sandbox.h"
 
+
+void *insn_region = NULL;                  // [guard][code][guard]
+void *insn_page   = NULL;                  // Executable Page
+
+volatile sig_atomic_t last_insn_signum  = 0;
+volatile sig_atomic_t executing_insn    = 0;
+volatile sig_atomic_t timeout_occurred  = 0;
+
+uint32_t insn_offset = 0;
+uint32_t mask        = 0x1111;
+
+sigjmp_buf escape_env;
+
+timer_t watchdog_timer;
+
+uint8_t sig_stack_array[MY_SIGSTKSZ];
+
+stack_t sig_stack = {
+    .ss_size = MY_SIGSTKSZ,
+    .ss_sp   = sig_stack_array,
+};
+
 void signal_handler(int sig_num, siginfo_t *sig_info, void *uc_ptr)
 {
     // Suppress unused warning
@@ -43,7 +65,7 @@ void init_signal_handler(void (*handler)(int, siginfo_t*, void*), int signum, in
     sigaction(signum,  &s, NULL);
 }
 
-inline void arm_watchdog_us(int us) {
+void arm_watchdog_us(int us) {
     struct itimerspec its = {
         .it_value.tv_sec = 0,
         .it_value.tv_nsec = us * 1000,
@@ -53,7 +75,7 @@ inline void arm_watchdog_us(int us) {
 }
 
 
-inline void disarm_watchdog(void) {
+void disarm_watchdog(void) {
     struct itimerspec its = {{0, 0}, {0, 0}};
     timer_settime(watchdog_timer, 0, &its, NULL);
 }
