@@ -65,6 +65,24 @@ void init_signal_handler(void (*handler)(int, siginfo_t*, void*), int signum, in
     sigaction(signum,  &s, NULL);
 }
 
+static pid_t gettid_wrapper(void) {
+    return syscall(SYS_gettid);
+}
+
+int init_watchdog_timer(void) {
+    struct sigevent sev;
+    memset(&sev, 0, sizeof(sev));
+    sev.sigev_notify = SIGEV_THREAD_ID;
+    sev.sigev_signo = SIGRTMIN; 
+    sev._sigev_un._tid = gettid_wrapper(); 
+    
+    if (timer_create(CLOCK_MONOTONIC, &sev, &watchdog_timer) != 0) {
+        perror("timer_create failed");
+        return -1;
+    }
+    return 0;
+}
+
 void arm_watchdog_us(int us) {
     struct itimerspec its = {
         .it_value.tv_sec = 0,

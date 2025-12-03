@@ -1,8 +1,9 @@
 #pragma once
 #include "core.h"
 
-#define PAGE_SIZE 4096
+#define PAGE_SIZE   4096
 #define MY_SIGSTKSZ 8192
+#define SA_NONE     0
 
 extern void *insn_region;                  // [guard][code][guard]
 extern void *insn_page;                    // Executable Page
@@ -21,5 +22,6 @@ extern stack_t sig_stack;
 void signal_handler(int, siginfo_t *, void*);
 void init_signal_handler(void(*handler)(int, siginfo_t*, void*), int, int);
 
+int init_watchdog_timer(void);
 void arm_watchdog_us(int us);
 void disarm_watchdog(void);
