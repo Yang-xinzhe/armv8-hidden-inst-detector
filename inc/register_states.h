@@ -7,3 +7,5 @@ typedef struct __attribute__((aligned(4))) {
     uint32_t sp, lr, pc;
     uint32_t cpsr;
 } RegisterStates;
+
+extern RegisterStates *reg_state_base_slot;
