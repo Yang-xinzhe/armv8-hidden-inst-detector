@@ -42,8 +42,8 @@ boilerplate_start:
     @    此时真实寄存器里的值是混乱的(r0是指针)，我们需要从栈顶把刚才备份的值存进去
     
     @    保存 r0 (测试值)
-    ldr     r1, [sp, #0]        @ 从栈顶读回 r0 的测试值
-    str     r1, [r0, #0]        @ 存入 states[0].r0
+    ldr     lr, [sp, #0]        @ 从栈顶读回 r0 的测试值
+    str     lr, [r0, #0]        @ 存入 states[0].r0
 
     @    保存 r1-r12 (可以直接用寄存器里的值，因为它们还没被破坏，除了r0)
     @    为了代码规整，我们用 stm 存 r1-r12
@@ -87,8 +87,8 @@ insn_location:
     add     r0, r0, #68         @ 偏移到 states[1] (sizeof RegisterStates)
 
     @ --- 保存逻辑同上 ---
-    ldr     r1, [sp, #0]        @ r0 测试值
-    str     r1, [r0, #0]
+    ldr     lr, [sp, #0]        @ r0 测试值
+    str     lr, [r0, #0]
 
     add     r0, r0, #4
     stm     r0, {r1-r12}
