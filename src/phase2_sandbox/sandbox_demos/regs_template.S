@@ -8,7 +8,6 @@
     .global boilerplate_start
     .global insn_location
     .global boilerplate_end
-    @ 移除 reg_state_base_slot 的导出
 
     .type test_instruction, %function
 
@@ -118,6 +117,5 @@ reg_init_values:
     .word   0x88888888, 0x99999999, 0xAAAAAAAA, 0xBBBBBBBB
     .word   0xCCCCCCCC
 
-    @ 移除 reg_state_base_slot
 
 boilerplate_end:
