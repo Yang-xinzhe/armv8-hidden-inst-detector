@@ -1,24 +1,18 @@
 #pragma once
 #define _GNU_SOURCE
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <sys/shm.h>
-#include <sys/mman.h> 
-#include <string.h>
-#include <ucontext.h>
-#include <signal.h>
-#include <linux/perf_event.h>
-#include <sys/syscall.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
-#include <sched.h>
-#include <errno.h>
+#include "core.h"
+#include "sandbox.h"
+#include "register_states.h"
 
 typedef struct {
     int ld_retired_fd;
     int st_retired_fd;
 } PmuCounter;
+
+typedef struct {
+    RegisterStates *states;
+    PmuCounter     *pmu;
+} PmuExecContext;
 
 typedef struct {
     uint64_t ld_count;
@@ -27,3 +21,6 @@ typedef struct {
 
 int perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags);
 int init_memory_monitor(PmuCounter *pmu);
+void pre_pmu(void *ctx);
+void post_pmu(void *ctx);
+void execute_insn_page_pmu(uint8_t *insn_bytes, size_t insn_length, RegisterStates *states, PmuCounter *pmu, PmuResult *result);
