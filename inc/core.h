@@ -44,3 +44,18 @@
 
 #include <setjmp.h>
 #include <syscall.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <sys/shm.h>
+#include <sys/mman.h> 
+#include <string.h>
+#include <ucontext.h>
+#include <signal.h>
+#include <linux/perf_event.h>
+#include <sys/syscall.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <sched.h>
+#include <errno.h>
