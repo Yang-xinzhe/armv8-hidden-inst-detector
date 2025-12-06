@@ -43,7 +43,7 @@ int main() {
 
     uint8_t insn_bytes[4];
     size_t buf_length = fill_insn_buffer(insn_bytes, sizeof(insn_bytes), hidden_instruction);
-    execute_insn_page(insn_bytes, buf_length, states);
+    execute_insn_page_reg(insn_bytes, buf_length, states);
 
     print_regs(&states[0], "Before Execution");
     print_regs(&states[1], "After Execution");
