@@ -56,6 +56,7 @@ dkms.conf
 
 # Ignore VSCode settings
 .vscode/
+build/
 res/phase_1/bitmap_results/
 res/phase_1/decoded_ranges/
 *.bin
