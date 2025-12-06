@@ -215,7 +215,7 @@ int main(int argc, const char* argv[]) {
             uint8_t insn_bytes[4];
             size_t buf_len = fill_insn_buffer(insn_bytes, sizeof(insn_bytes), insn);
 
-            execute_insn_page(insn_bytes, buf_len, NULL);
+            execute_insn_page_screen(insn_bytes, buf_len);
 
             if (last_insn_signum == SIGALRM || last_insn_signum == SIGPROF) {
                 range_bitmap_mark_timeout(&rb, insn);
