@@ -102,12 +102,11 @@ int init_insn_page(void)
     return 0;
 }
 
-void execute_insn_page(uint8_t *insn_bytes, size_t insn_length, RegisterStates *states)
+void execute_insn_page(uint8_t *insn_bytes, size_t insn_length, void *ctx, 
+                       converge_exec_t pre_exec, 
+                       exec_t exec_cb, 
+                       converge_exec_t post_exec)
 {
-    // Jumps to the instruction buffer
-    // void (*exec_page)() = (void (*)())insn_page;
-    void (*exec_page)(RegisterStates*) = (void (*)(RegisterStates*))insn_page;
-
     if (mprotect(insn_page, PAGE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
         perror("mprotect RWX failed");
         return;
@@ -133,7 +132,11 @@ void execute_insn_page(uint8_t *insn_bytes, size_t insn_length, RegisterStates *
     if(sigsetjmp(escape_env, 1) == 0) {
         arm_watchdog_us(200);
 
-        exec_page(states); 
+        if(pre_exec) pre_exec(ctx);
+
+        exec_cb(insn_page, ctx);
+
+        if(post_exec) post_exec(ctx);
 
         disarm_watchdog();
     } else {
@@ -151,6 +154,27 @@ void execute_insn_page(uint8_t *insn_bytes, size_t insn_length, RegisterStates *
     }
 
 }
+
+static void exec_std(void *addr, void *ctx) {
+    (void)ctx;
+    void (*exec_page)() = (void (*)())addr;
+    exec_page();
+}
+
+static void exec_reg(void *addr, void *ctx) {
+    RegisterStates *states = (RegisterStates *)ctx;
+    void (*exec_page)(RegisterStates*) = (void (*)(RegisterStates*))addr;
+    exec_page(states);
+}
+
+void execute_insn_page_screen(uint8_t *insn_bytes, size_t insn_length) {
+    execute_insn_page(insn_bytes, insn_length, NULL, NULL, exec_std, NULL);
+}
+
+void execute_insn_page_reg(uint8_t *insn_bytes, size_t insn_length, RegisterStates *states) {
+    execute_insn_page(insn_bytes, insn_length, states, NULL, exec_reg, NULL);
+}
+
 
 size_t fill_insn_buffer(uint8_t *buf, size_t buf_size, uint32_t insn)
 {
