@@ -102,10 +102,7 @@ int init_insn_page(void)
     return 0;
 }
 
-void execute_insn_page(uint8_t *insn_bytes, size_t insn_length, void *ctx, 
-                       converge_exec_t pre_exec, 
-                       exec_t exec_cb, 
-                       converge_exec_t post_exec)
+void execute_insn_page(uint8_t *insn_bytes, size_t insn_length, void *ctx, exec_t exec_cb)
 {
     if (mprotect(insn_page, PAGE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
         perror("mprotect RWX failed");
@@ -132,11 +129,7 @@ void execute_insn_page(uint8_t *insn_bytes, size_t insn_length, void *ctx,
     if(sigsetjmp(escape_env, 1) == 0) {
         arm_watchdog_us(200);
 
-        if(pre_exec) pre_exec(ctx);
-
         exec_cb(insn_page, ctx);
-
-        if(post_exec) post_exec(ctx);
 
         disarm_watchdog();
     } else {
@@ -167,14 +160,25 @@ static void exec_reg(void *addr, void *ctx) {
     exec_page(states);
 }
 
+static void exec_pmu(void *addr, void *ctx) {
+    PmuResult *res = (PmuResult *)ctx;
+    uint64_t (*exec_page)(void) = (uint64_t (*)(void))addr;
+    uint64_t val = exec_page();
+    res->ld_result = (uint32_t)(val & 0xFFFFFFFFu);
+    res->st_result = (uint32_t)(val >> 32);
+}
+
 void execute_insn_page_screen(uint8_t *insn_bytes, size_t insn_length) {
-    execute_insn_page(insn_bytes, insn_length, NULL, NULL, exec_std, NULL);
+    execute_insn_page(insn_bytes, insn_length, NULL, exec_std);
 }
 
 void execute_insn_page_reg(uint8_t *insn_bytes, size_t insn_length, RegisterStates *states) {
-    execute_insn_page(insn_bytes, insn_length, states, NULL, exec_reg, NULL);
+    execute_insn_page(insn_bytes, insn_length, states, exec_reg);
 }
 
+void execute_insn_page_pmu(uint8_t *insn_bytes, size_t insn_length, PmuResult *res) {
+    execute_insn_page(insn_bytes, insn_length, res, exec_pmu);
+}
 
 size_t fill_insn_buffer(uint8_t *buf, size_t buf_size, uint32_t insn)
 {

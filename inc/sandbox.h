@@ -24,15 +24,15 @@ extern uint8_t sig_stack_array[MY_SIGSTKSZ];
 extern stack_t sig_stack;
 
 typedef void (*exec_t)(void *addr, void *ctx);
-typedef void (*converge_exec_t)(void *ctx);
 
 void signal_handler(int, siginfo_t *, void*);
 void init_signal_handler(void(*handler)(int, siginfo_t*, void*), int, int);
 
 int init_insn_page(void);
-void execute_insn_page(uint8_t *insn_bytes, size_t insn_length, void *ctx, converge_exec_t pre_exec, exec_t exec_cb, converge_exec_t post_exec);
+void execute_insn_page(uint8_t *insn_bytes, size_t insn_length, void *ctx, exec_t exec_cb);
 void execute_insn_page_screen(uint8_t *insn_bytes, size_t insn_length);
 void execute_insn_page_reg(uint8_t *insn_bytes, size_t insn_length, RegisterStates *states);
+void execute_insn_page_pmu(uint8_t *insn_bytes, size_t insn_length, PmuResult *res);
 size_t fill_insn_buffer(uint8_t*, size_t, uint32_t);
 
 int init_watchdog_timer(void);
