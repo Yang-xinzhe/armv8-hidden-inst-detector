@@ -34,6 +34,9 @@ pmu_template:
 boilerplate_start:
     /* r0-r3 都当作 scratch，用完就扔 */
 
+    push    {r2-r12, lr}      @ 保存通用寄存器
+    vmov    s0, sp            @ 保存原始 sp
+
     /* 1. 禁用 counter0 / counter1，防止遗留状态 */
     mov     r3, #( (1 << 0) | (1 << 1) )   @ mask = 0x3
     mcr     p15, 0, r3, c9, c12, 2        @ PMCNTENCLR = 0x3
@@ -91,6 +94,9 @@ insn_location:
      *    在 C 里当成 uint64_t 返回值：
      *      val = ((uint64_t)ST << 32) | LD
      */
+    vmov    sp, s0
+    pop     {r2-r12, lr}      @ 注意：这里不能把 r0/r1 弹掉，否则把计数覆盖了
+
     bx      lr
 
 boilerplate_end:
