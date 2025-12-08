@@ -19,7 +19,7 @@ COMMON_SRC		:= src/core/cpu_affinity.c 									\
 
 SANDBOX_SRC 	:= src/core/sandbox.c
 
-REGS_TEMPLATE_SRC := src/phase2_sandbox/sandbox_demos/regs_template.S
+REGS_TEMPLATE_SRC := src/phase2_sandbox/sandbox_demos/regs_template_asm.S
 
 DISPATCHER_SRCS	:= src/phase1_screening/dispatcher_screen.c 				\
 				   $(COMMON_SRC)
@@ -30,7 +30,7 @@ WORKER_SRCS		:= src/phase1_screening/worker_screen.c						\
 
 MACRO_SRCS		:= src/phase2_sandbox/macro_valid.c
 
-REGS_DSRCS		:= src/phase2_sandbox/sandbox_demos/regs_diff.c 			\
+REGS_DSRCS		:= src/phase2_sandbox/sandbox_demos/regs_template.c 		\
                    $(SANDBOX_SRC) 											\
                    $(REGS_TEMPLATE_SRC)
 REGS_DOBJS 		:= $(REGS_DSRCS:.c=.o)
@@ -39,7 +39,7 @@ REGS_DOBJS 		:= $(REGS_DOBJS:.S=.o)
 PMU_DSRCS		:= src/phase2_sandbox/sandbox_demos/pmu_template.c				\
 					$(SANDBOX_SRC)\
 				   src/core/pmu_counter.c									\
-				   src/phase2_sandbox/sandbox_demos/pmu_template.S		
+				   src/phase2_sandbox/sandbox_demos/pmu_template_asm.S		
 				   
 				   
 
