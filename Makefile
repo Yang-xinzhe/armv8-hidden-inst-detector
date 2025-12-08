@@ -36,10 +36,10 @@ REGS_DSRCS		:= src/phase2_sandbox/sandbox_demos/regs_diff.c 			\
 REGS_DOBJS 		:= $(REGS_DSRCS:.c=.o)
 REGS_DOBJS 		:= $(REGS_DOBJS:.S=.o)
 
-PMU_DSRCS		:= src/phase2_sandbox/sandbox_demos/lsu_pmu.c				\
+PMU_DSRCS		:= src/phase2_sandbox/sandbox_demos/pmu_template.c				\
+					$(SANDBOX_SRC)\
 				   src/core/pmu_counter.c									\
-				   $(SANDBOX_SRC)											\
-				   $(REGS_TEMPLATE_SRC)			
+				   src/phase2_sandbox/sandbox_demos/pmu_template.S		
 				   
 				   
 
