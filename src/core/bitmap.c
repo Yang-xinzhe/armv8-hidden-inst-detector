@@ -1,4 +1,5 @@
 #include "bitmap.h"
+#include <string.h>
 
 static int bitmap_has_data(const uint8_t *bitmap, uint32_t size)
 {
@@ -34,8 +35,7 @@ static void bitmap_set_bit(uint8_t *bitmap,
     bitmap[byte_index] |= (uint8_t)(1u << bit_position);
 }
 
-
-int range_bitmap_init(RangeBitmap *rb, uint32_t start, uint32_t end)
+int range_bitmap_init_with_mask(RangeBitmap *rb, uint32_t start, uint32_t end, uint32_t plane_mask)
 {
     if (!rb) return -1;
     if (end <= start) {
@@ -45,52 +45,70 @@ int range_bitmap_init(RangeBitmap *rb, uint32_t start, uint32_t end)
     uint32_t bits = end - start;
     uint32_t size = (bits + 7u) / 8u;
 
-    uint8_t *exec = (uint8_t *)calloc(size, 1);
-    if (!exec) {
-        perror("calloc exec_bitmap failed");
-        return -1;
-    }
+    memset(rb, 0, sizeof(*rb));
+    rb->start = start;
+    rb->end   = end;
+    rb->bits  = bits;
+    rb->size  = size;
+    rb->plane_mask = plane_mask;
 
-    uint8_t *timeout = (uint8_t *)calloc(size, 1);
-    if (!timeout) {
-        perror("calloc timeout_bitmap failed");
-        free(exec);
-        return -1;
+    for (int p = 0; p < RB_PLANE_MAX; ++p) {
+        if (plane_mask & (1u << p)) {
+            rb->planes[p] = (uint8_t *)calloc(size, 1);
+            if (!rb->planes[p]) {
+                perror("calloc bitmap plane failed");
+                range_bitmap_destroy(rb);
+                return -1;
+            }
+        }
     }
-
-    rb->start          = start;
-    rb->end            = end;
-    rb->bits           = bits;
-    rb->size           = size;
-    rb->exec_bitmap    = exec;
-    rb->timeout_bitmap = timeout;
 
     return 0;
 }
 
+int range_bitmap_init(RangeBitmap *rb, uint32_t start, uint32_t end)
+{
+    return range_bitmap_init_with_mask(rb, start, end, RB_MASK_EXEC | RB_MASK_TIMEOUT);
+}
+
+void range_bitmap_mark(RangeBitmap *rb, enum rb_plane_id plane, uint32_t insn)
+{
+    if (!rb) return;
+    uint32_t mask = (1u << plane);
+    if (!(rb->plane_mask & mask)) return;
+    bitmap_set_bit(rb->planes[plane], rb->bits, rb->start, insn);
+}
+
 void range_bitmap_mark_exec(RangeBitmap *rb, uint32_t insn)
 {
-    if (!rb || !rb->exec_bitmap) return;
-    bitmap_set_bit(rb->exec_bitmap, rb->bits, rb->start, insn);
+    range_bitmap_mark(rb, RB_PLANE_EXEC, insn);
 }
 
 void range_bitmap_mark_timeout(RangeBitmap *rb, uint32_t insn)
 {
-    if (!rb || !rb->timeout_bitmap) return;
-    bitmap_set_bit(rb->timeout_bitmap, rb->bits, rb->start, insn);
+    range_bitmap_mark(rb, RB_PLANE_TIMEOUT, insn);
+}
+
+int range_bitmap_plane_has_data(const RangeBitmap *rb, enum rb_plane_id plane)
+{
+    if (!rb) return 0;
+    if (!(rb->plane_mask & (1u << plane))) return 0;
+    return bitmap_has_data(rb->planes[plane], rb->size);
 }
 
 int range_bitmap_has_timeout(const RangeBitmap *rb)
 {
-    if (!rb || !rb->timeout_bitmap) return 0;
-    return bitmap_has_data(rb->timeout_bitmap, rb->size);
+    return range_bitmap_plane_has_data(rb, RB_PLANE_TIMEOUT);
 }
 
-int range_bitmap_flush(const RangeBitmap *rb,
-                       FILE *exec_file,
-                       FILE *timeout_file)
+int range_bitmap_flush_exec_timeout(const RangeBitmap *rb,
+                                    FILE *exec_file,
+                                    FILE *timeout_file)
 {
-    if (!rb || !exec_file || !rb->exec_bitmap) {
+    if (!rb || !exec_file) {
+        return -1;
+    }
+    if (!(rb->plane_mask & RB_MASK_EXEC) || !rb->planes[RB_PLANE_EXEC]) {
         return -1;
     }
 
@@ -104,15 +122,17 @@ int range_bitmap_flush(const RangeBitmap *rb,
     if (fwrite(&rb->size,  sizeof(uint32_t), 1, exec_file) != 1) {
         return -1;
     }
-    if (fwrite(rb->exec_bitmap, 1, rb->size, exec_file) != rb->size) {
+    if (fwrite(rb->planes[RB_PLANE_EXEC], 1, rb->size, exec_file) != rb->size) {
         return -1;
     }
 
     int timeout_written = 0;
 
     // timeout 文件：只有有数据时才写
-    if (timeout_file && rb->timeout_bitmap &&
-        bitmap_has_data(rb->timeout_bitmap, rb->size))
+    if (timeout_file &&
+        (rb->plane_mask & RB_MASK_TIMEOUT) &&
+        rb->planes[RB_PLANE_TIMEOUT] &&
+        bitmap_has_data(rb->planes[RB_PLANE_TIMEOUT], rb->size))
     {
         if (fwrite(&rb->start, sizeof(uint32_t), 1, timeout_file) != 1) {
             return -1;
@@ -123,7 +143,7 @@ int range_bitmap_flush(const RangeBitmap *rb,
         if (fwrite(&rb->size,  sizeof(uint32_t), 1, timeout_file) != 1) {
             return -1;
         }
-        if (fwrite(rb->timeout_bitmap, 1, rb->size, timeout_file) != rb->size) {
+        if (fwrite(rb->planes[RB_PLANE_TIMEOUT], 1, rb->size, timeout_file) != rb->size) {
             return -1;
         }
 
@@ -133,21 +153,52 @@ int range_bitmap_flush(const RangeBitmap *rb,
     return timeout_written;
 }
 
+int range_bitmap_flush(const RangeBitmap *rb,
+                       FILE *exec_file,
+                       FILE *timeout_file)
+{
+    return range_bitmap_flush_exec_timeout(rb, exec_file, timeout_file);
+}
+
+int range_bitmap_flush_planes(const RangeBitmap *rb,
+                              uint32_t plane_mask,
+                              FILE *files[RB_PLANE_MAX])
+{
+    if (!rb) return -1;
+
+    for (int p = 0; p < RB_PLANE_MAX; ++p) {
+        uint32_t mask = (1u << p);
+        if (!(plane_mask & mask)) continue;
+        if (!(rb->plane_mask & mask)) continue;
+        if (!files || !files[p]) continue;
+
+        uint8_t *plane = rb->planes[p];
+        if (!plane) continue;
+
+        /* 默认只有有数据才写，避免产生空块 */
+        if (!bitmap_has_data(plane, rb->size)) continue;
+
+        if (fwrite(&rb->start, sizeof(uint32_t), 1, files[p]) != 1) return -1;
+        if (fwrite(&rb->end,   sizeof(uint32_t), 1, files[p]) != 1) return -1;
+        if (fwrite(&rb->size,  sizeof(uint32_t), 1, files[p]) != 1) return -1;
+        if (fwrite(plane, 1, rb->size, files[p]) != rb->size) return -1;
+    }
+
+    return 0;
+}
+
 void range_bitmap_destroy(RangeBitmap *rb)
 {
     if (!rb) return;
 
-    if (rb->exec_bitmap) {
-        free(rb->exec_bitmap);
-        rb->exec_bitmap = NULL;
+    for (int p = 0; p < RB_PLANE_MAX; ++p) {
+        if (rb->planes[p]) {
+            free(rb->planes[p]);
+            rb->planes[p] = NULL;
+        }
     }
 
-    if (rb->timeout_bitmap) {
-        free(rb->timeout_bitmap);
-        rb->timeout_bitmap = NULL;
-    }
-
-    rb->start = rb->end = rb->bits = rb->size = 0;
+    rb->start = rb->end = rb->bits = rb->size = rb->plane_mask = 0;
 }
 
 
