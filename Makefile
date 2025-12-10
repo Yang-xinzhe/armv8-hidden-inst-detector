@@ -12,6 +12,7 @@ WORKER			:=	$(BUILD_DIR)/worker
 MACRO_VALID		:=	$(BUILD_DIR)/macro_valid
 REGS_DEMO		:=	$(BUILD_DIR)/regs_demo
 PMU_DEMO		:=	$(BUILD_DIR)/pmu_demo
+ARITHMETIC 		:=	$(BUILD_DIR)/arithmetic
 
 
 COMMON_SRC		:= src/core/cpu_affinity.c 									\
@@ -41,6 +42,12 @@ PMU_DSRCS		:= src/phase2_sandbox/sandbox_demos/pmu_template.c				\
 				   src/core/pmu_counter.c									\
 				   src/phase2_sandbox/sandbox_demos/pmu_template_asm.S		
 				   
+ARITHMETIC_SRCS := src/phase2_sandbox/arithmetic.c \
+                   $(SANDBOX_SRC) \
+                   $(REGS_TEMPLATE_SRC) \
+                   $(COMMON_SRC)
+ARITHMETIC_OBJS := $(ARITHMETIC_SRCS:.c=.o)
+ARITHMETIC_OBJS := $(ARITHMETIC_OBJS:.S=.o)
 				   
 
 
@@ -48,7 +55,7 @@ TEST			?= 0xe1a00001
 
 .PHONY: all clean $(MACRO_VALID)
 
-all:	$(DISPATCHER) $(WORKER) $(MACRO_VALID) $(REGS_DEMO) $(PMU_DEMO)
+all:	$(DISPATCHER) $(WORKER) $(MACRO_VALID) $(REGS_DEMO) $(PMU_DEMO) $(ARITHMETIC)
 
 $(DISPATCHER): CFLAGS += -DNUM_CORES=$(NUM_CORES)
 
@@ -70,9 +77,12 @@ $(REGS_DEMO): $(REGS_DOBJS)
 $(PMU_DEMO): $(PMU_DSRCS)
 	$(CC) $(CFLAGS) $^ -o $(PMU_DEMO)
 
+$(ARITHMETIC): $(ARITHMETIC_OBJS)
+	$(CC) $(CFLAGS) $^ -o $@
+
 clean:
-	rm -f $(DISPATCHER) $(WORKER) $(MACRO_VALID) $(REGS_DEMO) $(PMU_DEMO)
-	rm -f src/phase2_sandbox/sandbox_demos/*.o src/core/*.o
+	rm -f $(DISPATCHER) $(WORKER) $(MACRO_VALID) $(REGS_DEMO) $(PMU_DEMO) $(ARITHMETIC)
+	rm -f src/phase2_sandbox/sandbox_demos/*.o src/core/*.o src/phase2_sandbox/*.o
 
 $(filter 0x%,$(MAKECMDGOALS)):
 	$(MAKE) $(MACRO_VALID) TEST=$@
