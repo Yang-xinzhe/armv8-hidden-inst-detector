@@ -2,6 +2,20 @@
 #include "sandbox.h"
 #include "register_states.h"
 
+RegisterStates *reg_state_base_slot = NULL; 
+
+int init_reg_state_slot(void)
+{
+    // 存 before/after 两份寄存器
+    reg_state_base_slot = malloc(2 * sizeof(RegisterStates));
+    if (!reg_state_base_slot) {
+        perror("malloc reg_state_base_slot");
+        return -1;
+    }
+    memset(reg_state_base_slot, 0, 2 * sizeof(RegisterStates));
+    return 0;
+}
+
 void print_regs_diff(const RegisterStates *before, const RegisterStates *after)
 {
     printf("=== Register Differences ===\n");
@@ -15,8 +29,7 @@ void print_regs_diff(const RegisterStates *before, const RegisterStates *after)
     PRINT_DIFF(r0);  PRINT_DIFF(r1);  PRINT_DIFF(r2);  PRINT_DIFF(r3);
     PRINT_DIFF(r4);  PRINT_DIFF(r5);  PRINT_DIFF(r6);  PRINT_DIFF(r7);
     PRINT_DIFF(r8);  PRINT_DIFF(r9);  PRINT_DIFF(r10); PRINT_DIFF(r11);
-    PRINT_DIFF(r12); PRINT_DIFF(sp);  PRINT_DIFF(lr);  PRINT_DIFF(pc);
-    PRINT_DIFF(cpsr);
+    PRINT_DIFF(r12); PRINT_DIFF(cpsr);
 
     #undef PRINT_DIFF
 }
@@ -297,13 +310,8 @@ int main() {
 
     unsigned int len = sizeof(test_alu_insns)/sizeof(test_alu_insns[0]);
 
-    RegisterStates *states = malloc(2 * sizeof(RegisterStates));
-    if (!states) {
-        perror("malloc");
-        return 1;
-    }
 
-    memset(states, 0, sizeof(RegisterStates) * 2);
+    if (init_reg_state_slot() != 0) return 1;
 
     init_signal_handler(signal_handler, SIGILL,    SA_NONE);
     init_signal_handler(signal_handler, SIGSEGV,   SA_NONE);
@@ -327,9 +335,9 @@ int main() {
     uint8_t insn_bytes[4];
     for(unsigned int i = 0; i < len; i++) {
         size_t buf_length = fill_insn_buffer(insn_bytes, sizeof(insn_bytes), test_alu_insns[i]);
-        execute_insn_page_reg(insn_bytes, buf_length, states);
+        execute_insn_page_reg(insn_bytes, buf_length, NULL);
         printf("Instruction: 0x%x\n",test_alu_insns[i]);
-        print_regs_diff(&states[0], &states[1]);
+        print_regs_diff(&reg_state_base_slot[0], &reg_state_base_slot[1]);
         printf("\n");
     }
     
