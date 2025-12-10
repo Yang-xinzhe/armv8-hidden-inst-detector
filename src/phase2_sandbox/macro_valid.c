@@ -22,6 +22,7 @@ void test_predefined_instructions(void) {
 
     __asm__ __volatile__(/* 保存执行前的CPSR和特殊寄存器 */
                  "str r9, %[r9_b] \n"
+                 "msr cpsr_f, #0             \n"
                  "mrs r9, cpsr \n"
                  "str r9, %[cpsr_b] \n"
                  "str lr, %[lr_b] \n"
