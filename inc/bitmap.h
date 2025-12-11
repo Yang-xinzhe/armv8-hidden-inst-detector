@@ -14,6 +14,8 @@ enum rb_plane_id {
     RB_PLANE_TIMEOUT,
     RB_PLANE_GPR,
     RB_PLANE_CPSR,
+    RB_PLANE_LD,
+    RB_PLANE_ST,
     RB_PLANE_MAX
 };
 
@@ -21,6 +23,8 @@ enum rb_plane_id {
 #define RB_MASK_TIMEOUT (1u << RB_PLANE_TIMEOUT)
 #define RB_MASK_GPR     (1u << RB_PLANE_GPR)
 #define RB_MASK_CPSR    (1u << RB_PLANE_CPSR)
+#define RB_MASK_LD      (1u << RB_PLANE_LD)
+#define RB_MASK_ST      (1u << RB_PLANE_ST)
 
 typedef struct {
     uint32_t start;
@@ -36,6 +40,21 @@ int  range_bitmap_init_with_mask(RangeBitmap *rb, uint32_t start, uint32_t end, 
 void range_bitmap_mark(RangeBitmap *rb, enum rb_plane_id plane, uint32_t insn);
 int  range_bitmap_plane_has_data(const RangeBitmap *rb, enum rb_plane_id plane);
 int  range_bitmap_flush_planes(const RangeBitmap *rb, uint32_t plane_mask, FILE *files[RB_PLANE_MAX]);
+int  range_bitmap_serialize(const RangeBitmap *rb, FILE *file);
+
+/* 辅助 Mark 函数 */
+static inline void range_bitmap_mark_gpr(RangeBitmap *rb, uint32_t insn) {
+    range_bitmap_mark(rb, RB_PLANE_GPR, insn);
+}
+static inline void range_bitmap_mark_cpsr(RangeBitmap *rb, uint32_t insn) {
+    range_bitmap_mark(rb, RB_PLANE_CPSR, insn);
+}
+static inline void range_bitmap_mark_ld(RangeBitmap *rb, uint32_t insn) {
+    range_bitmap_mark(rb, RB_PLANE_LD, insn);
+}
+static inline void range_bitmap_mark_st(RangeBitmap *rb, uint32_t insn) {
+    range_bitmap_mark(rb, RB_PLANE_ST, insn);
+}
 
 /* 兼容旧接口（默认只分配 EXEC / TIMEOUT） */
 int  range_bitmap_init(RangeBitmap *rb, uint32_t start, uint32_t end);

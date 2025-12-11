@@ -187,6 +187,30 @@ int range_bitmap_flush_planes(const RangeBitmap *rb,
     return 0;
 }
 
+int range_bitmap_serialize(const RangeBitmap *rb, FILE *file)
+{
+    if (!rb || !file) return -1;
+    
+    // Write header once
+    if (fwrite(&rb->start, sizeof(uint32_t), 1, file) != 1) return -1;
+    if (fwrite(&rb->end,   sizeof(uint32_t), 1, file) != 1) return -1;
+    if (fwrite(&rb->size,  sizeof(uint32_t), 1, file) != 1) return -1;
+
+    // Write all allocated planes in order
+    for (int p = 0; p < RB_PLANE_MAX; ++p) {
+        if (rb->plane_mask & (1u << p)) {
+             if (rb->planes[p]) {
+                 if (fwrite(rb->planes[p], 1, rb->size, file) != rb->size) return -1;
+             } else {
+                 // Should not happen if initialized correctly, but as fallback write zeros? 
+                 // Or error out. Let's return error to be safe.
+                 return -1;
+             }
+        }
+    }
+    return 0;
+}
+
 void range_bitmap_destroy(RangeBitmap *rb)
 {
     if (!rb) return;
@@ -200,5 +224,3 @@ void range_bitmap_destroy(RangeBitmap *rb)
 
     rb->start = rb->end = rb->bits = rb->size = rb->plane_mask = 0;
 }
-
-
