@@ -63,6 +63,8 @@ boilerplate_start:
     mov     r3, #( (1 << 0) | (1 << 1) )   @ mask = 0x3
     mcr     p15, 0, r3, c9, c12, 1        @ PMCNTENSET = 0x3
     isb
+    msr cpsr_f, #0  
+    isb
 
     /* =================================================
      * 5. 被测指令窗口（C 侧会把这一条 nop 覆盖成 hidden insn）
