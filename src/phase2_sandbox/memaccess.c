@@ -134,30 +134,27 @@ int main(int argc, const char *argv[]) {
             munmap(insn_region, PAGE_SIZE * 3);
             if (init_insn_page() != 0) break;
             pmu_init();
+            
             uint8_t insn_bytes[4];
             size_t buf_length = fill_insn_buffer(insn_bytes, sizeof(insn_bytes), insn);
             PmuResult res = {0};
+            
+            last_insn_signum = 0;
             execute_insn_page_pmu(insn_bytes, buf_length, &res);
+
             if (last_insn_signum != 0) {
-                printf("Signal %d caught for %x, ignoring PMU\n", last_insn_signum, insn);
+                // printf("Signal %d caught for %x, ignoring PMU\n", last_insn_signum, insn);
                 continue; 
             }
-            
 
-            if (res.ld_result > 0 || res.st_result > 0) {
-                printf("Ins: %08x | Sig: %d | LD: %u | ST: %u\n", 
-                       insn, last_insn_signum, res.ld_result, res.st_result);
-             }
-
-            // if (res.ld_result > 0 && res.ld_result < 20) {
-            //     range_bitmap_mark_ld(&rb, insn);
-            //     // printf("ldr: 0x%x\n", insn);
-            // } 
-            // if (res.st_result > 0 && res.st_result < 20) {
-            //     range_bitmap_mark_st(&rb, insn);
-            //     // printf("str: 0x%x\n", insn);
-            // }
-            
+            if (res.ld_result > 0 && res.ld_result < 20) {
+                range_bitmap_mark_ld(&rb, insn);
+                // printf("ldr: 0x%x\n", insn);
+            } 
+            if (res.st_result > 0 && res.st_result < 20) {
+                range_bitmap_mark_st(&rb, insn);
+                // printf("str: 0x%x\n", insn);
+            }
         }
 
         if (range_bitmap_serialize(&rb, output_file) != 0) {
