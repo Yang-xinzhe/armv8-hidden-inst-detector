@@ -211,6 +211,13 @@ int main(int argc, const char* argv[]) {
         }
 
         for (uint32_t insn = range_start; insn < range_end; ++insn) {
+            
+            // 重置 insn_page 模板以防止自修改代码污染
+            munmap(insn_region, PAGE_SIZE * 3);
+            if (init_insn_page() != 0) {
+                perror("init_insn_page failed in loop");
+                break;
+            }
 
             uint8_t insn_bytes[4];
             size_t buf_len = fill_insn_buffer(insn_bytes, sizeof(insn_bytes), insn);
