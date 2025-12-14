@@ -65,13 +65,13 @@ boilerplate_start:
     isb
     msr cpsr_f, #0  
     isb
-
+    dsb sy
     /* =================================================
      * 5. 被测指令窗口（C 侧会把这一条 nop 覆盖成 hidden insn）
      * ================================================= */
 insn_location:
     nop                                   @ 将被覆盖为被测指令
-
+    dsb sy
     isb                                   @ 确保该指令完成
 
     /* 6. 立刻关闭 counter0 / counter1 */
