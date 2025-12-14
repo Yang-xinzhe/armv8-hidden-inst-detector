@@ -33,6 +33,7 @@ void execute_insn_page(uint8_t *insn_bytes, size_t insn_length, void *ctx, exec_
 void execute_insn_page_screen(uint8_t *insn_bytes, size_t insn_length);
 void execute_insn_page_reg(uint8_t *insn_bytes, size_t insn_length, RegisterStates *states);
 void execute_insn_page_pmu(uint8_t *insn_bytes, size_t insn_length, PmuResult *res);
+void execute_insn_page_simd(uint8_t *insn_bytes, size_t insn_length, SimdRegisterStates *states);
 size_t fill_insn_buffer(uint8_t*, size_t, uint32_t);
 
 int init_watchdog_timer(void);

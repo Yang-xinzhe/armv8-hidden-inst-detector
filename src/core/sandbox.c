@@ -164,6 +164,12 @@ static void exec_reg(void *addr, void *ctx) {
     exec_page(states);
 }
 
+static void exec_simd(void *addr, void *ctx) {
+    SimdRegisterStates *states = (SimdRegisterStates *)ctx;
+    void (*exec_page)(SimdRegisterStates*) = (void (*)(SimdRegisterStates*))addr;
+    exec_page(states);
+}
+
 static void exec_pmu(void *addr, void *ctx) {
     PmuResult *res = (PmuResult *)ctx;
     uint64_t (*exec_page)(void) = (uint64_t (*)(void))addr;
@@ -182,6 +188,10 @@ void execute_insn_page_reg(uint8_t *insn_bytes, size_t insn_length, RegisterStat
 
 void execute_insn_page_pmu(uint8_t *insn_bytes, size_t insn_length, PmuResult *res) {
     execute_insn_page(insn_bytes, insn_length, res, exec_pmu);
+}
+
+void execute_insn_page_simd(uint8_t *insn_bytes, size_t insn_length, SimdRegisterStates *states) {
+    execute_insn_page(insn_bytes, insn_length, states, exec_simd);
 }
 
 size_t fill_insn_buffer(uint8_t *buf, size_t buf_size, uint32_t insn)
