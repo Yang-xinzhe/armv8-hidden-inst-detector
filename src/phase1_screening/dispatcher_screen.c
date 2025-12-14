@@ -1,7 +1,9 @@
 #include "core.h"
 #include "cpu_affinity.h"
+#include <unistd.h>
+#include <stdlib.h>
 
-#define NUM_CORES 4 // Specify the number of cores to use by including the -d option in the compilation parameters.
+// #define NUM_CORES 4 // Removed: determined by args
 #define MAX_FILES 256
 
 struct Worker {
@@ -14,10 +16,13 @@ struct Worker {
     int jobs_done;
 };
 
-void refresh_dashboard(struct Worker *workers, int processed, int max, int active) {
+// Update 1: Add input_dir to dashboard arguments for better status display
+void refresh_dashboard(struct Worker *workers, int num_cores, int processed, int max, int active, char *input_dir) {
     printf("\033[H\033[2J"); // Refresh Screen
 
     printf("==================== (Dashboard) ====================\n");
+    // Update 2: Show config info
+    printf("    Target: %s | Cores: %d\n", input_dir, num_cores);
     printf("    Overall progress:[");
     int width = 40;
     int pos = (processed * width) / max;
@@ -25,14 +30,14 @@ void refresh_dashboard(struct Worker *workers, int processed, int max, int activ
         if(i < pos) printf("#");
         else printf(" ");
     }
-    printf("] %d/%d (Active Core: %d)\n", processed, max, active);
+    printf("] %d/%d (Active: %d)\n", processed, max, active);
     printf("====================================================================\n");
     printf(" Core | PID   | Processing    | Elapsed  | Total | Status/Last Message \n");
     printf("------+-------+-------------+-------+------+------------------------\n");
 
     time_t now = time(NULL);
 
-    for(int i = 0 ; i < NUM_CORES ; i++) {
+    for(int i = 0 ; i < num_cores ; i++) { // Use num_cores variable
         struct Worker *w = &workers[i];
 
         if(w->busy){
@@ -54,16 +59,45 @@ void refresh_dashboard(struct Worker *workers, int processed, int max, int activ
     fflush(stdout);
 }
 
-int main() {
-    if(access("./worker", X_OK) != 0) {
-        fprintf(stderr, "Cannot execute ins_check\n");
+int main(int argc, char *argv[]) {
+    // Initialize with invalid values to force specification
+    int num_cores = -1;
+    int core_offset = -1;
+    char *worker_path = NULL;
+    char *input_dir = NULL;
+
+    int opt;
+    while ((opt = getopt(argc, argv, "c:o:e:d:")) != -1) {
+        switch (opt) {
+            case 'c': num_cores = atoi(optarg); break;
+            case 'o': core_offset = atoi(optarg); break;
+            case 'e': worker_path = optarg; break;
+            case 'd': input_dir = optarg; break;
+            default:
+                fprintf(stderr, "Usage: %s -c <num_cores> -o <core_offset> -e <worker_path> -d <input_dir>\n", argv[0]);
+                return 1;
+        }
+    }
+
+    // Validation: Ensure all arguments are provided
+    if (num_cores <= 0 || core_offset < 0 || worker_path == NULL || input_dir == NULL) {
+        fprintf(stderr, "Error: Missing required arguments.\n");
+        fprintf(stderr, "Usage: %s -c <num_cores> -o <core_offset> -e <worker_path> -d <input_dir>\n", argv[0]);
+        fprintf(stderr, "Example (A53): %s -c 4 -o 0 -e ./worker -d results_A32\n", argv[0]);
+        fprintf(stderr, "Example (A72): %s -c 2 -o 4 -e ./worker -d results_A32\n", argv[0]);
         return 1;
     }
 
-    struct Worker workers[NUM_CORES];
-    for(int i = 0; i < NUM_CORES; i++) {
+    if(access(worker_path, X_OK) != 0) {
+        fprintf(stderr, "Cannot execute %s\n", worker_path);
+        return 1;
+    }
+
+    // VLA or malloc for workers
+    struct Worker workers[num_cores];
+    for(int i = 0; i < num_cores; i++) {
         workers[i].pid = -1;
-        workers[i].core_id = i;
+        workers[i].core_id = i + core_offset;
         workers[i].busy = 0;
         workers[i].file_number = -1;
         workers[i].jobs_done = 0;
@@ -74,10 +108,10 @@ int main() {
     int current_file = 0;
 
     while(files_processed < MAX_FILES || current_file < MAX_FILES) {
-        for(int w = 0; w < NUM_CORES; w++) {
+        for(int w = 0; w < num_cores; w++) {
             if(!workers[w].busy && current_file < MAX_FILES) {
                 char input_filename[100];
-                snprintf(input_filename, sizeof(input_filename), "results_A32/res%d.txt", current_file);
+                snprintf(input_filename, sizeof(input_filename), "%s/res%d.txt", input_dir, current_file);
                 
                 if(access(input_filename, R_OK) != 0) {
                     snprintf(workers[w].last_msg, 64, "\033[33mEscape(No File): %d\033[0m", current_file);
@@ -98,8 +132,8 @@ int main() {
                     char file_num_str[20];
                     snprintf(file_num_str, sizeof(file_num_str), "%d", current_file);
                     
-                    execl("./worker", "worker", file_num_str, NULL);
-                    perror("./worker failed!");
+                    execl(worker_path, worker_path, file_num_str, NULL);
+                    perror("Worker execution failed!"); // Use generic error msg
                     _exit(1);
                 } else {
                     workers[w].pid = pid;
@@ -112,7 +146,7 @@ int main() {
             }
         }
 
-        for(int w = 0; w < NUM_CORES; w++) {
+        for(int w = 0; w < num_cores; w++) {
             if(workers[w].busy) {
                 time_t current_time = time(NULL);
                 int elapsed = current_time - workers[w].start_time;
@@ -132,6 +166,8 @@ int main() {
                 
                 // Detect Result file update time
                 char result_file[256];
+                // Note: assuming output is still in bitmap_results? 
+                // If output dir depends on task, might need adjustment, but standard worker logic uses bitmap_results
                 snprintf(result_file, sizeof(result_file), 
                         "bitmap_results/res%d_complete.bin", workers[w].file_number);
                 struct stat st;
@@ -160,9 +196,18 @@ int main() {
                             snprintf(workers[w].last_msg, 64, "\033[31mFailed(Exit:%d) res%d\033[0m", exit_code, workers[w].file_number);
                         }
                     } else {
-                        snprintf(workers[w].last_msg, 64, "\033[31mTerminated res%d\033[0m", workers[w].file_number);
+                        int sig = WTERMSIG(status);
+                        snprintf(workers[w].last_msg, 64, "\033[31mTerminated(Sig:%d) res%d\033[0m", sig, workers[w].file_number);
+                        
+                        fprintf(stderr, "\n[ERROR] Worker for res%d terminated by signal %d (PID %d)\n", 
+                                workers[w].file_number, sig, workers[w].pid);
+                        // Optional: Pause briefly to let user see it if stderr is mixed
+                        usleep(500000); 
                     }
                     
+                    // Update 3: Fix Total counter
+                    workers[w].jobs_done++;
+
                     workers[w].pid = -1;
                     workers[w].busy = 0;
                     workers[w].file_number = -1;
@@ -172,9 +217,15 @@ int main() {
         }
 
         int active_workers = 0;
-        for(int i=0; i<NUM_CORES; i++) if(workers[i].busy) active_workers++;
+        for(int i=0; i<num_cores; i++) if(workers[i].busy) active_workers++;
         
-        refresh_dashboard(workers, files_processed, MAX_FILES, active_workers);
+        // Update 4: Pass input_dir
+        refresh_dashboard(workers, num_cores, files_processed, MAX_FILES, active_workers, input_dir);
+
+        // Update 5: Fix infinite loop when files are skipped
+        if (current_file >= MAX_FILES && active_workers == 0) {
+            break;
+        }
 
         usleep(200000);
 
