@@ -16,6 +16,7 @@ enum rb_plane_id {
     RB_PLANE_CPSR,
     RB_PLANE_LD,
     RB_PLANE_ST,
+    RB_PLANE_SP,
     RB_PLANE_MAX
 };
 
@@ -25,6 +26,7 @@ enum rb_plane_id {
 #define RB_MASK_CPSR    (1u << RB_PLANE_CPSR)
 #define RB_MASK_LD      (1u << RB_PLANE_LD)
 #define RB_MASK_ST      (1u << RB_PLANE_ST)
+#define RB_MASK_SP      (1u << RB_PLANE_SP)
 
 typedef struct {
     uint32_t start;
@@ -54,6 +56,9 @@ static inline void range_bitmap_mark_ld(RangeBitmap *rb, uint32_t insn) {
 }
 static inline void range_bitmap_mark_st(RangeBitmap *rb, uint32_t insn) {
     range_bitmap_mark(rb, RB_PLANE_ST, insn);
+}
+static inline void range_bitmap_mark_sp(RangeBitmap *rb, uint32_t insn) {
+    range_bitmap_mark(rb, RB_PLANE_SP, insn);
 }
 
 /* 兼容旧接口（默认只分配 EXEC / TIMEOUT） */
