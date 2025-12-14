@@ -4,6 +4,12 @@
 #include "sandbox.h"
 #include "cpu_affinity.h"
 
+typedef struct {
+    uint32_t insn;
+    uint32_t before;
+    uint32_t after;
+} CpsrChangeLog;
+
 RegisterStates *reg_state_base_slot = NULL; 
 
 typedef struct {
@@ -13,7 +19,7 @@ typedef struct {
 static int reg_bitmap_init(RegEffectBitmap *rb, uint32_t start, uint32_t end)
 {
     if (!rb) return -1;
-    return range_bitmap_init_with_mask(&rb->rb, start, end, RB_MASK_GPR | RB_MASK_CPSR);
+    return range_bitmap_init_with_mask(&rb->rb, start, end, RB_MASK_GPR | RB_MASK_CPSR | RB_MASK_SP);
 }
 
 static void reg_bitmap_mark_gpr(RegEffectBitmap *rb, uint32_t insn)
@@ -26,6 +32,12 @@ static void reg_bitmap_mark_cpsr(RegEffectBitmap *rb, uint32_t insn)
 {
     if (!rb) return;
     range_bitmap_mark(&rb->rb, RB_PLANE_CPSR, insn);
+}
+
+static void reg_bitmap_mark_sp(RegEffectBitmap *rb, uint32_t insn)
+{
+    if (!rb) return;
+    range_bitmap_mark(&rb->rb, RB_PLANE_SP, insn);
 }
 
 static int reg_bitmap_flush(RegEffectBitmap *rb, FILE *file)
@@ -43,6 +55,11 @@ static int reg_bitmap_flush(RegEffectBitmap *rb, FILE *file)
     /* 写 cpsr_changed 位图（RB_PLANE_CPSR），即使全 0 也写 */
     if (!(r->plane_mask & RB_MASK_CPSR) || !r->planes[RB_PLANE_CPSR]) return -1;
     if (fwrite(r->planes[RB_PLANE_CPSR], 1, r->size, file) != r->size) return -1;
+
+    /* 写 sp_changed 位图 (RB_PLANE_SP) */
+    if ((r->plane_mask & RB_MASK_SP) && r->planes[RB_PLANE_SP]) {
+        if (fwrite(r->planes[RB_PLANE_SP], 1, r->size, file) != r->size) return -1;
+    }
 
     return 0;
 }
@@ -174,6 +191,12 @@ int main(int argc, const char *argv[]) {
     fwrite(&file_number, sizeof(int), 1, output_file);
     fwrite(&range_count, sizeof(int), 1, output_file);
 
+    char cpsr_log_filename[256];
+    snprintf(cpsr_log_filename, sizeof(cpsr_log_filename),
+             "arithmetic_results/res%d_cpsr.bin", file_number);
+
+    FILE *cpsr_log_file = fopen(cpsr_log_filename, "wb");
+
     char line[256];
     int  current_range_index = 0;
 
@@ -212,27 +235,30 @@ int main(int argc, const char *argv[]) {
         
             bool cpsr_changed = (b->cpsr != a->cpsr);
         
+            bool all_gpr_zero = (b->r0 == 0) && (b->r1 == 0) && (b->r2 == 0) &&
+                                (b->r3 == 0) && (b->r4 == 0) && (b->r5 == 0) &&
+                                (b->r6 == 0) && (b->r7 == 0) && (b->r8 == 0) &&
+                                (b->r9 == 0) && (b->r10 == 0) && (b->r11 == 0) &&
+                                (b->r12 == 0);
+
             if (gpr_changed) {
                 // printf("Instruction: 0x%x caused GPR change:\n", insn);
-                // if (b->r0  != a->r0 ) printf("  r0 : %08x -> %08x\n", b->r0,  a->r0);
-                // if (b->r1  != a->r1 ) printf("  r1 : %08x -> %08x\n", b->r1,  a->r1);
-                // if (b->r2  != a->r2 ) printf("  r2 : %08x -> %08x\n", b->r2,  a->r2);
-                // if (b->r3  != a->r3 ) printf("  r3 : %08x -> %08x\n", b->r3,  a->r3);
-                // if (b->r4  != a->r4 ) printf("  r4 : %08x -> %08x\n", b->r4,  a->r4);
-                // if (b->r5  != a->r5 ) printf("  r5 : %08x -> %08x\n", b->r5,  a->r5);
-                // if (b->r6  != a->r6 ) printf("  r6 : %08x -> %08x\n", b->r6,  a->r6);
-                // if (b->r7  != a->r7 ) printf("  r7 : %08x -> %08x\n", b->r7,  a->r7);
-                // if (b->r8  != a->r8 ) printf("  r8 : %08x -> %08x\n", b->r8,  a->r8);
-                // if (b->r9  != a->r9 ) printf("  r9 : %08x -> %08x\n", b->r9,  a->r9);
-                // if (b->r10 != a->r10) printf("  r10: %08x -> %08x\n", b->r10, a->r10);
-                // if (b->r11 != a->r11) printf("  r11: %08x -> %08x\n", b->r11, a->r11);
-                // if (b->r12 != a->r12) printf("  r12: %08x -> %08x\n", b->r12, a->r12);
                 reg_bitmap_mark_gpr(&rb, insn);
             } 
             if (cpsr_changed) {
                 // printf("Instruction: 0x%x caused CPSR change:\n", insn);
-                // printf("  cpsr: %08x -> %08x\n", b->cpsr, a->cpsr);
                 reg_bitmap_mark_cpsr(&rb, insn);
+
+                if (cpsr_log_file) {
+                    CpsrChangeLog log_entry;
+                    log_entry.insn = insn;
+                    log_entry.before = b->cpsr;
+                    log_entry.after = a->cpsr;
+                    fwrite(&log_entry, sizeof(CpsrChangeLog), 1, cpsr_log_file);
+                }
+            }
+            if (all_gpr_zero) {
+                reg_bitmap_mark_sp(&rb, insn);
             }
             
         }
@@ -243,6 +269,10 @@ int main(int argc, const char *argv[]) {
         }
 
         reg_bitmap_destroy(&rb);
+    }
+
+    if (cpsr_log_file) {
+        fclose(cpsr_log_file);
     }
     // printf("\n");
     return 0;
