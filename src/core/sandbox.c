@@ -29,6 +29,10 @@ void signal_handler(int sig_num, siginfo_t *sig_info, void *uc_ptr)
 
     ucontext_t* uc = (ucontext_t*) uc_ptr;
 
+    if (sig_num == SIGRTMIN) {
+        timeout_occurred = 1;
+    }
+
     last_insn_signum = sig_num;
 
 
