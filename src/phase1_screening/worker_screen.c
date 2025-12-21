@@ -1,6 +1,7 @@
 #include "core.h"
 #include "sandbox.h"
 #include "bitmap.h"
+#include "config.h"
 
 void execution_boilerplate(void);
 
@@ -91,15 +92,27 @@ static int count_ranges_in_file(FILE *f, uint64_t *total_insns_out)
 int main(int argc, const char* argv[]) {
     
     if(argc < 2) {
-        fprintf(stderr, "Usage: %s <file_number> [output_dir]\n", argv[0]);
-        fprintf(stderr, "Example: %s 1 bitmap_results\n", argv[0]);
+        fprintf(stderr, "Usage: %s <file_number> [output_dir] [input_dir]\n", argv[0]);
+        fprintf(stderr, "Example: %s 1 bitmap_results results_A32\n", argv[0]);
         return 1;
     }
 
     int target_file_num = atoi(argv[1]);
-    const char *output_dir = "bitmap_results";
-    if (argc >= 3) {
-        output_dir = argv[2];
+
+    ProjectConfig cfg;
+    project_config_init(&cfg);
+    (void)project_config_load(&cfg, "config/project.conf");
+
+    const char *output_dir = cfg.phase1_output_dir;
+    const char *input_dir = cfg.phase1_input_dir;
+
+    /* CLI overrides (preferred) */
+    if (argc >= 3 && argv[2] && argv[2][0] != '\0') output_dir = argv[2];
+    if (argc >= 4 && argv[3] && argv[3][0] != '\0') input_dir = argv[3];
+
+    if (!input_dir || input_dir[0] == '\0') {
+        fprintf(stderr, "Error: input_dir is not set. Provide it as argv[3] or via config/project.conf (phase1_input_dir=...)\n");
+        return 1;
     }
 
     int file_number = target_file_num;
@@ -135,7 +148,7 @@ int main(int argc, const char* argv[]) {
     }
 
     char input_filename[256];
-    snprintf(input_filename, sizeof(input_filename), "results_A32/res%d.txt", target_file_num);
+    snprintf(input_filename, sizeof(input_filename), "%s/res%d.txt", input_dir, target_file_num);
 
     FILE *res_file = fopen(input_filename, "r");
     if (!res_file) {

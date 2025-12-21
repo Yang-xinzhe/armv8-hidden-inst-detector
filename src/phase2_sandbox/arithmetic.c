@@ -111,7 +111,7 @@ int main(int argc, const char *argv[]) {
 
     if(argc < 2) {
         fprintf(stderr, "Usage: %s <file_number>\n", argv[0]);
-        fprintf(stderr, "Example: %s 1  # Handling results_A32/res1.txt\n", argv[0]);
+        fprintf(stderr, "Example: %s 1  # Handling hidden_insn/res1.txt\n", argv[0]);
         return 1;
     }
 
