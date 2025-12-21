@@ -91,12 +91,17 @@ static int count_ranges_in_file(FILE *f, uint64_t *total_insns_out)
 int main(int argc, const char* argv[]) {
     
     if(argc < 2) {
-        fprintf(stderr, "Usage: %s <file_number>\n", argv[0]);
-        fprintf(stderr, "Example: %s 1  # Handling results_A32/res1.txt\n", argv[0]);
+        fprintf(stderr, "Usage: %s <file_number> [output_dir]\n", argv[0]);
+        fprintf(stderr, "Example: %s 1 bitmap_results\n", argv[0]);
         return 1;
     }
 
     int target_file_num = atoi(argv[1]);
+    const char *output_dir = "bitmap_results";
+    if (argc >= 3) {
+        output_dir = argv[2];
+    }
+
     int file_number = target_file_num;
     
     char file_num_env[32];
@@ -150,11 +155,11 @@ int main(int argc, const char* argv[]) {
         return 0;
     }
 
-    mkdir("bitmap_results", 0755);
+    mkdir(output_dir, 0755);
 
     char output_filename[256];
     snprintf(output_filename, sizeof(output_filename),
-             "bitmap_results/res%d_complete.bin", file_number);
+             "%s/res%d_complete.bin", output_dir, file_number);
 
     FILE *output_file = fopen(output_filename, "wb");
     if (!output_file) {
@@ -167,7 +172,7 @@ int main(int argc, const char* argv[]) {
 
     char timeout_filename[256];
     snprintf(timeout_filename, sizeof(timeout_filename),
-             "bitmap_results/res%d_timeout.bin", file_number);
+             "%s/res%d_timeout.bin", output_dir, file_number);
 
     FILE *timeout_file = fopen(timeout_filename, "wb");
     if (!timeout_file) {

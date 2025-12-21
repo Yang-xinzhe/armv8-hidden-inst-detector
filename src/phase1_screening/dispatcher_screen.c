@@ -65,16 +65,18 @@ int main(int argc, char *argv[]) {
     int core_offset = -1;
     char *worker_path = NULL;
     char *input_dir = NULL;
+    char *output_dir = "bitmap_results";
 
     int opt;
-    while ((opt = getopt(argc, argv, "c:o:e:d:")) != -1) {
+    while ((opt = getopt(argc, argv, "c:o:e:d:r:")) != -1) {
         switch (opt) {
             case 'c': num_cores = atoi(optarg); break;
             case 'o': core_offset = atoi(optarg); break;
             case 'e': worker_path = optarg; break;
             case 'd': input_dir = optarg; break;
+            case 'r': output_dir = optarg; break;
             default:
-                fprintf(stderr, "Usage: %s -c <num_cores> -o <core_offset> -e <worker_path> -d <input_dir>\n", argv[0]);
+                fprintf(stderr, "Usage: %s -c <num_cores> -o <core_offset> -e <worker_path> -d <input_dir> [-r <output_dir>]\n", argv[0]);
                 return 1;
         }
     }
@@ -82,8 +84,8 @@ int main(int argc, char *argv[]) {
     // Validation: Ensure all arguments are provided
     if (num_cores <= 0 || core_offset < 0 || worker_path == NULL || input_dir == NULL) {
         fprintf(stderr, "Error: Missing required arguments.\n");
-        fprintf(stderr, "Usage: %s -c <num_cores> -o <core_offset> -e <worker_path> -d <input_dir>\n", argv[0]);
-        fprintf(stderr, "Example (A53): %s -c 4 -o 0 -e ./worker -d results_A32\n", argv[0]);
+        fprintf(stderr, "Usage: %s -c <num_cores> -o <core_offset> -e <worker_path> -d <input_dir> [-r <output_dir>]\n", argv[0]);
+        fprintf(stderr, "Example (A53): %s -c 4 -o 0 -e ./worker -d results_A32 -r bitmap_results_A53\n", argv[0]);
         fprintf(stderr, "Example (A72): %s -c 2 -o 4 -e ./worker -d results_A32\n", argv[0]);
         return 1;
     }
@@ -132,7 +134,7 @@ int main(int argc, char *argv[]) {
                     char file_num_str[20];
                     snprintf(file_num_str, sizeof(file_num_str), "%d", current_file);
                     
-                    execl(worker_path, worker_path, file_num_str, NULL);
+                    execl(worker_path, worker_path, file_num_str, output_dir, NULL);
                     perror("Worker execution failed!"); // Use generic error msg
                     _exit(1);
                 } else {
@@ -169,7 +171,7 @@ int main(int argc, char *argv[]) {
                 // Note: assuming output is still in bitmap_results? 
                 // If output dir depends on task, might need adjustment, but standard worker logic uses bitmap_results
                 snprintf(result_file, sizeof(result_file), 
-                        "bitmap_results/res%d_complete.bin", workers[w].file_number);
+                        "%s/res%d_complete.bin", output_dir, workers[w].file_number);
                 struct stat st;
                 if (stat(result_file, &st) == 0) {
                     time_t file_age = current_time - st.st_mtime;
