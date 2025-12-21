@@ -37,6 +37,11 @@ boilerplate_start:
     push    {r2-r12, lr}      @ 保存通用寄存器
     vmov    s0, sp            @ 保存原始 sp
 
+    mrc     p15, 0, r3, c9, c12, 0       @ 读取 PMCR
+    orr     r3, r3, #1                   @ 置位 bit 0 (Enable)
+    mcr     p15, 0, r3, c9, c12, 0       @ 写回 PMCR
+    isb                                  @ 确保指令完成
+
     /* 1. 禁用 counter0 / counter1，防止遗留状态 */
     mov     r3, #( (1 << 0) | (1 << 1) )   @ mask = 0x3
     mcr     p15, 0, r3, c9, c12, 2        @ PMCNTENCLR = 0x3
