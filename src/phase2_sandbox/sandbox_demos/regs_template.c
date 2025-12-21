@@ -37,6 +37,7 @@ void print_regs_diff(const RegisterStates *before, const RegisterStates *after)
 
 int main() {
     uint32_t hidden_instruction = 0xE0800001;
+    (void)hidden_instruction; /* demo placeholder */
     uint32_t test_alu_insns[] = {
         // ============= 基本算术运算 =============
         // ADD - 各种寄存器组合

@@ -2,6 +2,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,7 +43,7 @@ static int parse_int(const char *s, int *out)
     if (end == s) return -1;
     while (*end && isspace((unsigned char)*end)) end++;
     if (*end != '\0') return -1;
-    if (v < -2147483648L || v > 2147483647L) return -1;
+    if (v < (long)INT_MIN || v > (long)INT_MAX) return -1;
     *out = (int)v;
     return 0;
 }

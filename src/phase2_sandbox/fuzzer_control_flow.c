@@ -1,6 +1,17 @@
 #include "sandbox.h"
 #include "config.h"
 
+#include <unistd.h>
+
+static const char *DEFAULT_CONFIG_PATH = "config/project.conf";
+
+static void print_usage(const char *prog)
+{
+    fprintf(stderr, "Usage: %s [-f <config_path>] [-i <input_dir>] <file_number>\n", prog);
+    fprintf(stderr, "  -f: config file path (default: %s)\n", DEFAULT_CONFIG_PATH);
+    fprintf(stderr, "  -i: override phase2_input_dir\n");
+}
+
 // 全局变量，记录 Fault PC
 volatile uintptr_t fault_pc = 0;
 volatile uintptr_t fault_addr = 0;
@@ -26,15 +37,34 @@ void cf_signal_handler(int sig, siginfo_t *info, void *context) {
     siglongjmp(escape_env, 1);
 }
 
-int main(int argc, const char* argv[])
+int main(int argc, char* argv[])
 {
-    int target_file_num = atoi(argv[1]);
-    int file_number = target_file_num;
-
     ProjectConfig cfg;
     project_config_init(&cfg);
-    (void)project_config_load(&cfg, "config/project.conf");
+    const char *config_path = DEFAULT_CONFIG_PATH;
+    const char *cli_input_dir = NULL;
+
+    int opt;
+    while ((opt = getopt(argc, argv, "f:i:")) != -1) {
+        switch (opt) {
+            case 'f': config_path = optarg; break;
+            case 'i': cli_input_dir = optarg; break;
+            default:
+                print_usage(argv[0]);
+                return 1;
+        }
+    }
+
+    if (optind >= argc) {
+        print_usage(argv[0]);
+        return 1;
+    }
+
+    int target_file_num = atoi(argv[optind]);
+
+    (void)project_config_load(&cfg, config_path);
     const char *input_dir = cfg.phase2_input_dir;
+    if (cli_input_dir && cli_input_dir[0] != '\0') input_dir = cli_input_dir;
 
     sigset_t empty_set;
     sigemptyset(&empty_set);
@@ -81,7 +111,6 @@ int main(int argc, const char* argv[])
     uintptr_t trap_offset_bytes = insn_offset_bytes + 4;
 
     char line[256];
-    int  current_range_index = 0;
 
     while (fgets(line, sizeof(line), res_file) != NULL) {
         uint32_t range_start, range_end;

@@ -5,6 +5,9 @@
 #include "config.h"
 #include "fs_utils.h"
 
+#include <string.h>
+#include <unistd.h>
+
 typedef struct {
     uint32_t insn;
     uint32_t before;
@@ -108,22 +111,49 @@ static void build_subdir(char *out, size_t out_sz, const char *base, const char 
     }
 }
 
-int main(int argc, const char* argv[]) {
+static const char *DEFAULT_CONFIG_PATH = "config/project.conf";
 
-    if(argc < 2) {
-        fprintf(stderr, "Usage: %s <file_number>\n", argv[0]);
-        fprintf(stderr, "Example: %s 1  # Handling hidden_insn/res1.txt\n", argv[0]);
-        return 1;
-    }
+static void print_usage(const char *prog)
+{
+    fprintf(stderr, "Usage: %s [-f <config_path>] [-i <input_dir>] [-o <output_base>] <file_number>\n", prog);
+    fprintf(stderr, "  -f: config file path (default: %s)\n", DEFAULT_CONFIG_PATH);
+    fprintf(stderr, "  -i: override phase2_input_dir\n");
+    fprintf(stderr, "  -o: override phase2_output_dir (base directory)\n");
+}
 
-    int target_file_num = atoi(argv[1]);
-    int file_number = target_file_num;
+int main(int argc, char* argv[]) {
 
     ProjectConfig cfg;
     project_config_init(&cfg);
-    (void)project_config_load(&cfg, "config/project.conf");
+    const char *config_path = DEFAULT_CONFIG_PATH;
+    const char *cli_input_dir = NULL;
+    const char *cli_output_base = NULL;
+
+    int opt;
+    while ((opt = getopt(argc, argv, "f:i:o:")) != -1) {
+        switch (opt) {
+            case 'f': config_path = optarg; break;
+            case 'i': cli_input_dir = optarg; break;
+            case 'o': cli_output_base = optarg; break;
+            default:
+                print_usage(argv[0]);
+                return 1;
+        }
+    }
+
+    if (optind >= argc) {
+        print_usage(argv[0]);
+        return 1;
+    }
+
+    int target_file_num = atoi(argv[optind]);
+    int file_number = target_file_num;
+
+    (void)project_config_load(&cfg, config_path);
     const char *input_dir = cfg.phase2_input_dir;
     const char *output_base = cfg.phase2_output_dir;
+    if (cli_input_dir && cli_input_dir[0] != '\0') input_dir = cli_input_dir;
+    if (cli_output_base) output_base = cli_output_base;
 
     if (init_simd_state_slot() != 0) {
         return 1;
@@ -151,7 +181,7 @@ int main(int argc, const char* argv[]) {
         return 1;
     }
 
-    char input_filename[256];
+    char input_filename[512];
     snprintf(input_filename, sizeof(input_filename), "%s/res%d.txt", input_dir, target_file_num);
 
     FILE *res_file = fopen(input_filename, "r");
@@ -179,7 +209,7 @@ int main(int argc, const char* argv[]) {
         return 1;
     }
 
-    char output_filename[256];
+    char output_filename[768];
     snprintf(output_filename, sizeof(output_filename),
              "%s/res%d_complete.bin", out_dir, file_number);
 
@@ -196,7 +226,7 @@ int main(int argc, const char* argv[]) {
     fwrite(&file_number, sizeof(int), 1, output_file);
     fwrite(&range_count, sizeof(int), 1, output_file);
 
-    char cpsr_log_filename[256];
+    char cpsr_log_filename[768];
     snprintf(cpsr_log_filename, sizeof(cpsr_log_filename),
              "%s/res%d_cpsr.bin", out_dir, file_number);
 
