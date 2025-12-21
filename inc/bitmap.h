@@ -17,6 +17,8 @@ enum rb_plane_id {
     RB_PLANE_LD,
     RB_PLANE_ST,
     RB_PLANE_SP,
+    RB_PLANE_SIMD,
+    RB_PLANE_FPSCR,
     RB_PLANE_MAX
 };
 
@@ -27,6 +29,8 @@ enum rb_plane_id {
 #define RB_MASK_LD      (1u << RB_PLANE_LD)
 #define RB_MASK_ST      (1u << RB_PLANE_ST)
 #define RB_MASK_SP      (1u << RB_PLANE_SP)
+#define RB_MASK_SIMD      (1u << RB_PLANE_SIMD)
+#define RB_MASK_FPSCR      (1u << RB_PLANE_FPSCR)
 
 typedef struct {
     uint32_t start;
