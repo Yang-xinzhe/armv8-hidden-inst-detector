@@ -1,4 +1,5 @@
 #include "sandbox.h"
+#include "config.h"
 
 // 全局变量，记录 Fault PC
 volatile uintptr_t fault_pc = 0;
@@ -30,6 +31,11 @@ int main(int argc, const char* argv[])
     int target_file_num = atoi(argv[1]);
     int file_number = target_file_num;
 
+    ProjectConfig cfg;
+    project_config_init(&cfg);
+    (void)project_config_load(&cfg, "config/project.conf");
+    const char *input_dir = cfg.phase2_input_dir;
+
     sigset_t empty_set;
     sigemptyset(&empty_set);
     pthread_sigmask(SIG_SETMASK, &empty_set, NULL);
@@ -55,7 +61,7 @@ int main(int argc, const char* argv[])
     }
 
     char input_filename[256];
-    snprintf(input_filename, sizeof(input_filename), "hidden_insn/res%d_timeout_decoded.txt", target_file_num);
+    snprintf(input_filename, sizeof(input_filename), "%s/res%d_timeout_decoded.txt", input_dir, target_file_num);
 
     FILE *res_file = fopen(input_filename, "r");
     if (!res_file) {

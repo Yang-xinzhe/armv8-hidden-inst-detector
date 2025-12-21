@@ -57,6 +57,10 @@ void project_config_init(ProjectConfig *cfg)
     set_str(cfg->phase1_output_dir, "bitmap_results");
     cfg->phase1_max_files = 256;
     cfg->phase1_timeout_seconds = 7200;
+
+    /* Phase 2 defaults */
+    set_str(cfg->phase2_input_dir, "hidden_insn");
+    set_str(cfg->phase2_output_dir, "");
     cfg->loaded = 0;
 }
 
@@ -98,6 +102,10 @@ int project_config_load(ProjectConfig *cfg, const char *path)
             (void)parse_int(val, &cfg->phase1_max_files);
         } else if (streq(key, "phase1_timeout_seconds")) {
             (void)parse_int(val, &cfg->phase1_timeout_seconds);
+        } else if (streq(key, "phase2_input_dir")) {
+            set_str(cfg->phase2_input_dir, val);
+        } else if (streq(key, "phase2_output_dir")) {
+            set_str(cfg->phase2_output_dir, val);
         } else {
             /* Unknown keys are ignored for forward compatibility */
         }

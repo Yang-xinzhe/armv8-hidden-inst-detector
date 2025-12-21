@@ -10,22 +10,22 @@ These are useful for:
 
 ### Files
 
-#### `regs_template.c` + `regs_template_asm.S` (build target: `build/regs_demo`)
+#### `regs_template.c` + `regs_template_asm.S` (build target: `build/demo/regs_demo`)
 
 - **Purpose**: run an instruction and record general register state before/after.
 - **Typical use**: validate that the sandbox correctly preserves/restores registers and that you can observe side-effects.
 
-#### `pmu_template.c` + `pmu_template_asm.S` (build target: `build/pmu_demo`)
+#### `pmu_template.c` + `pmu_template_asm.S` (build target: `build/demo/pmu_demo`)
 
 - **Purpose**: run an instruction while collecting PMU-derived load/store signals.
 - **Typical use**: validate your PMU setup (including `pmu_user_module`) and the PMU readout path.
 
-#### `simd_template.c` + `simd_template_asm.S` (build target: `build/simd_demo`)
+#### `simd_template.c` + `simd_template_asm.S` (build target: `build/demo/simd_demo`)
 
 - **Purpose**: run an instruction and capture SIMD/FPSCR state transitions.
 - **Typical use**: verify SIMD state save/restore and detection logic.
 
-#### `control_flow.c` + `control_flow_asm.S` (build target: `build/control_flow_demo`)
+#### `control_flow.c` + `control_flow_asm.S` (build target: `build/demo/control_flow_demo`)
 
 - **Purpose**: minimal control-flow template that can be used to reason about trap/PC behavior around a tested instruction.
 - **Typical use**: confirm “normal sequential execution” vs “undefined” vs “jump/escape” signal patterns.

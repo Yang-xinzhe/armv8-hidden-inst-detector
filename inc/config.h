@@ -16,6 +16,10 @@ typedef struct {
     int  phase1_max_files;         /* e.g., 256 */
     int  phase1_timeout_seconds;   /* e.g., 7200 */
 
+    /* Phase 2 (sandbox analysis / fuzzers) */
+    char phase2_input_dir[256];    /* e.g., hidden_insn */
+    char phase2_output_dir[256];   /* base dir, e.g., res/phase2 (empty means current dir) */
+
     /* Generic */
     int loaded;                    /* 1 if a config file was loaded */
 } ProjectConfig;

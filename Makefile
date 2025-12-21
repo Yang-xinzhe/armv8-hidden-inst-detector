@@ -7,21 +7,23 @@ CFLAGS			:=	-std=c11 -Wall -Wextra  -O0 \
            			-Iinc \
 
 BUILD_DIR   	:= 	build
+DEMO_DIR		:=  $(BUILD_DIR)/demo
 DISPATCHER		:=	$(BUILD_DIR)/dispatcher
 WORKER			:=	$(BUILD_DIR)/worker
 MACRO_VALID		:=	$(BUILD_DIR)/macro_valid
-REGS_DEMO		:=	$(BUILD_DIR)/regs_demo
-PMU_DEMO		:=	$(BUILD_DIR)/pmu_demo
+REGS_DEMO		:=	$(DEMO_DIR)/regs_demo
+PMU_DEMO		:=	$(DEMO_DIR)/pmu_demo
 FUZZ_ARITHMETIC 	:=	$(BUILD_DIR)/fuzzer_arithmetic
 FUZZ_MEMACCESS		:=	$(BUILD_DIR)/fuzzer_memaccess
-CONTROL_FLOW_DEMO := $(BUILD_DIR)/control_flow_demo
+CONTROL_FLOW_DEMO := $(DEMO_DIR)/control_flow_demo
 FUZZ_CONTROL_FLOW 	:= 	$(BUILD_DIR)/fuzzer_control_flow
-SIMD_DEMO		:=	$(BUILD_DIR)/simd_demo
+SIMD_DEMO		:=	$(DEMO_DIR)/simd_demo
 FUZZ_SIMD			:=	$(BUILD_DIR)/fuzzer_simd
 
 COMMON_SRC		:= src/core/cpu_affinity.c 									\
 				   src/core/bitmap.c											\
-				   src/core/config.c
+				   src/core/config.c											\
+				   src/core/fs_utils.c
 
 SANDBOX_SRC 	:= src/core/sandbox.c
 
@@ -88,42 +90,48 @@ TEST			?= 0xe1a00001
 
 all:	$(DISPATCHER) $(WORKER) $(MACRO_VALID) $(REGS_DEMO) $(PMU_DEMO) $(FUZZ_ARITHMETIC) $(FUZZ_MEMACCESS) $(CONTROL_FLOW_DEMO) $(FUZZ_CONTROL_FLOW) $(SIMD_DEMO) $(FUZZ_SIMD)
 
+$(BUILD_DIR):
+	mkdir -p $@
+
+$(DEMO_DIR): | $(BUILD_DIR)
+	mkdir -p $@
+
 $(DISPATCHER): CFLAGS += -DNUM_CORES=$(NUM_CORES)
 
-$(DISPATCHER): $(DISPATCHER_SRCS)
+$(DISPATCHER): $(DISPATCHER_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $(DISPATCHER)
 
-$(WORKER): $(WORKER_SRCS)
+$(WORKER): $(WORKER_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $(WORKER)
 
-$(MACRO_VALID):	$(MACRO_SRCS)
+$(MACRO_VALID):	$(MACRO_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -DTEST_INSTRUCTION=$(TEST) $< -o $(MACRO_VALID)
 
 %.o: %.S
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(REGS_DEMO): $(REGS_DOBJS)
+$(REGS_DEMO): $(REGS_DOBJS) | $(DEMO_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(PMU_DEMO): $(PMU_DSRCS)
+$(PMU_DEMO): $(PMU_DSRCS) | $(DEMO_DIR)
 	$(CC) $(CFLAGS) $^ -o $(PMU_DEMO)
 
-$(FUZZ_ARITHMETIC): $(FUZZ_ARITHMETIC_OBJS)
+$(FUZZ_ARITHMETIC): $(FUZZ_ARITHMETIC_OBJS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(FUZZ_MEMACCESS): $(FUZZ_MEMACCESS_SRCS)
+$(FUZZ_MEMACCESS): $(FUZZ_MEMACCESS_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(CONTROL_FLOW_DEMO): $(CONTROL_FLOW_SRCS)
+$(CONTROL_FLOW_DEMO): $(CONTROL_FLOW_SRCS) | $(DEMO_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(FUZZ_CONTROL_FLOW): $(FUZZ_CONTROL_FLOW_SRCS)
+$(FUZZ_CONTROL_FLOW): $(FUZZ_CONTROL_FLOW_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(SIMD_DEMO): $(SIMD_DEMO_SRCS)
+$(SIMD_DEMO): $(SIMD_DEMO_SRCS) | $(DEMO_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(FUZZ_SIMD): $(FUZZ_SIMD_SRCS)
+$(FUZZ_SIMD): $(FUZZ_SIMD_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
 
 clean:

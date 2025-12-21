@@ -3,6 +3,8 @@
 #include "bitmap.h"
 #include "sandbox.h"
 #include "cpu_affinity.h"
+#include "config.h"
+#include "fs_utils.h"
 
 typedef struct {
     uint32_t insn;
@@ -95,6 +97,20 @@ static int count_ranges_in_file(FILE *f, uint64_t *total_insns_out)
     return count;
 }
 
+static void build_subdir(char *out, size_t out_sz, const char *base, const char *subdir)
+{
+    if (!base || base[0] == '\0') {
+        snprintf(out, out_sz, "%s", subdir);
+        return;
+    }
+    size_t n = strlen(base);
+    if (n > 0 && base[n - 1] == '/') {
+        snprintf(out, out_sz, "%s%s", base, subdir);
+    } else {
+        snprintf(out, out_sz, "%s/%s", base, subdir);
+    }
+}
+
 int init_reg_state_slot(void)
 {
     // 存 before/after 两份寄存器
@@ -117,6 +133,12 @@ int main(int argc, const char *argv[]) {
 
     int target_file_num = atoi(argv[1]);
     int file_number = target_file_num;
+
+    ProjectConfig cfg;
+    project_config_init(&cfg);
+    (void)project_config_load(&cfg, "config/project.conf");
+    const char *input_dir = cfg.phase2_input_dir;
+    const char *output_base = cfg.phase2_output_dir;
 
     // RegisterStates *states = malloc(2 * sizeof(RegisterStates));
     // if (!states) {
@@ -152,7 +174,7 @@ int main(int argc, const char *argv[]) {
     }
 
     char input_filename[256];
-    snprintf(input_filename, sizeof(input_filename), "hidden_insn/res%d.txt", target_file_num);
+    snprintf(input_filename, sizeof(input_filename), "%s/res%d.txt", input_dir, target_file_num);
 
     FILE *res_file = fopen(input_filename, "r");
     if (!res_file) {
@@ -172,11 +194,16 @@ int main(int argc, const char *argv[]) {
         return 0;
     }
 
-    mkdir("arithmetic_results", 0755);
+    char out_dir[512];
+    build_subdir(out_dir, sizeof(out_dir), output_base, "arithmetic_results");
+    if (mkdir_p(out_dir, 0755) != 0) {
+        perror("mkdir_p arithmetic_results");
+        return 1;
+    }
 
     char output_filename[256];
     snprintf(output_filename, sizeof(output_filename),
-             "arithmetic_results/res%d_complete.bin", file_number);
+             "%s/res%d_complete.bin", out_dir, file_number);
 
     FILE *output_file = fopen(output_filename, "wb");
     if (!output_file) {
@@ -193,7 +220,7 @@ int main(int argc, const char *argv[]) {
 
     char cpsr_log_filename[256];
     snprintf(cpsr_log_filename, sizeof(cpsr_log_filename),
-             "arithmetic_results/res%d_cpsr.bin", file_number);
+             "%s/res%d_cpsr.bin", out_dir, file_number);
 
     FILE *cpsr_log_file = fopen(cpsr_log_filename, "wb");
 

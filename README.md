@@ -36,6 +36,7 @@ make
 ```
 
 Outputs are placed under `build/` (e.g., `build/dispatcher`, `build/worker`, ...).
+Demo binaries are placed under `build/demo/`.
 
 ### Phase 1: screening (dispatcher + worker)
 
