@@ -18,7 +18,7 @@ The codebase is organized into two phases:
   - `dispatcher_screen.c`: schedules jobs across cores (fork + CPU affinity)
   - `worker_screen.c`: executes ranges and writes bitmap results
 - **`src/phase2_sandbox/`**:
-  - analysis programs for large-scale validation/characterization (e.g., `arithmetic.c`, `memaccess.c`, `simd.c`, `controlFlow.c`)
+  - analysis programs for large-scale validation/characterization (e.g., `fuzzer_arithmetic.c`, `fuzzer_memaccess.c`, `fuzzer_simd.c`, `fuzzer_control_flow.c`)
   - `sandbox_demos/`: small demos/templates used to validate known behaviors
   - `pmu_user_module/`: kernel module used to enable user-space PMU access (requires `insmod`)
 - **`res/`**: local experiment outputs (ignored by git by default; keep your results here).

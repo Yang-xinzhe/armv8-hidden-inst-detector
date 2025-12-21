@@ -33,7 +33,7 @@ The exact parser is `sscanf(..., "[%x, %x]")` in these programs.
 
 ### Programs (large-scale analyzers)
 
-#### `arithmetic` (build target: `build/arithmetic`)
+#### `fuzzer_arithmetic` (build target: `build/fuzzer_arithmetic`)
 
 - **Goal**: detect instruction encodings that modify GPRs/CPSR/SP-like state.
 - **Input**: `hidden_insn/resN.txt`
@@ -41,7 +41,7 @@ The exact parser is `sscanf(..., "[%x, %x]")` in these programs.
   - `resN_complete.bin`: bitmap planes for GPR/CPSR/(SP marker) effects
   - `resN_cpsr.bin`: per-instruction CPSR change logs (when CPSR changes)
 
-#### `memaccess` (build target: `build/memaccess`)
+#### `fuzzer_memaccess` (build target: `build/fuzzer_memaccess`)
 
 - **Goal**: detect instruction encodings that likely perform loads/stores by using PMU retired events.
 - **Input**: `hidden_insn/resN.txt`
@@ -49,7 +49,7 @@ The exact parser is `sscanf(..., "[%x, %x]")` in these programs.
   - `resN_complete.bin`
 - **Note**: this relies on **user-space PMU access** being enabled on your platform. See `pmu_user_module/`.
 
-#### `simd` (build target: `build/simd`)
+#### `fuzzer_simd` (build target: `build/fuzzer_simd`)
 
 - **Goal**: detect instruction encodings that modify SIMD registers or FPSCR/FPSR state.
 - **Input**: `hidden_insn/resN.txt`
@@ -57,7 +57,7 @@ The exact parser is `sscanf(..., "[%x, %x]")` in these programs.
   - `resN_complete.bin`
   - `resN_cpsr.bin` (actually FPSCR change logs; filename kept for compatibility)
 
-#### `controlFlow` (build target: `build/controlFlow`)
+#### `fuzzer_control_flow` (build target: `build/fuzzer_control_flow`)
 
 - **Goal**: analyze timeout-decoded candidates for control-flow anomalies (loops/deadlocks, jumps out of sandbox, undefined instruction, etc.).
 - **Input**: `hidden_insn/resN_timeout_decoded.txt`

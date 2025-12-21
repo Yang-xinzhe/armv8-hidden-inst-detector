@@ -12,12 +12,12 @@ WORKER			:=	$(BUILD_DIR)/worker
 MACRO_VALID		:=	$(BUILD_DIR)/macro_valid
 REGS_DEMO		:=	$(BUILD_DIR)/regs_demo
 PMU_DEMO		:=	$(BUILD_DIR)/pmu_demo
-ARITHMETIC 		:=	$(BUILD_DIR)/arithmetic
-MEMACCESS		:=	$(BUILD_DIR)/memaccess
+FUZZ_ARITHMETIC 	:=	$(BUILD_DIR)/fuzzer_arithmetic
+FUZZ_MEMACCESS		:=	$(BUILD_DIR)/fuzzer_memaccess
 CONTROL_FLOW_DEMO := $(BUILD_DIR)/control_flow_demo
-CONTROL_F 		:= 	$(BUILD_DIR)/controlFlow
+FUZZ_CONTROL_FLOW 	:= 	$(BUILD_DIR)/fuzzer_control_flow
 SIMD_DEMO		:=	$(BUILD_DIR)/simd_demo
-SIMD			:=	$(BUILD_DIR)/simd
+FUZZ_SIMD			:=	$(BUILD_DIR)/fuzzer_simd
 
 COMMON_SRC		:= src/core/cpu_affinity.c 									\
 				   src/core/bitmap.c											\
@@ -47,14 +47,14 @@ PMU_DSRCS		:= src/phase2_sandbox/sandbox_demos/pmu_template.c				\
 				   src/core/pmu_counter.c									\
 				   src/phase2_sandbox/sandbox_demos/pmu_template_asm.S		
 				   
-ARITHMETIC_SRCS := src/phase2_sandbox/arithmetic.c \
+FUZZ_ARITHMETIC_SRCS := src/phase2_sandbox/fuzzer_arithmetic.c \
                    $(SANDBOX_SRC) \
                    $(REGS_TEMPLATE_SRC) \
                    $(COMMON_SRC)
-ARITHMETIC_OBJS := $(ARITHMETIC_SRCS:.c=.o)
-ARITHMETIC_OBJS := $(ARITHMETIC_OBJS:.S=.o)
+FUZZ_ARITHMETIC_OBJS := $(FUZZ_ARITHMETIC_SRCS:.c=.o)
+FUZZ_ARITHMETIC_OBJS := $(FUZZ_ARITHMETIC_OBJS:.S=.o)
 				   
-MEMACCESS_SRCS	:=	src/phase2_sandbox/memaccess.c \
+FUZZ_MEMACCESS_SRCS	:=	src/phase2_sandbox/fuzzer_memaccess.c \
 				   src/core/pmu_counter.c \
 				   $(SANDBOX_SRC) \
 				   $(COMMON_SRC)	\
@@ -66,7 +66,7 @@ CONTROL_FLOW_SRCS := src/phase2_sandbox/sandbox_demos/control_flow.c \
                      $(SANDBOX_SRC) \
                      $(COMMON_SRC)
 
-CONTROL_FSRCS := src/phase2_sandbox/controlFlow.c \
+FUZZ_CONTROL_FLOW_SRCS := src/phase2_sandbox/fuzzer_control_flow.c \
 					 src/phase2_sandbox/sandbox_demos/control_flow_asm.S \
                      $(SANDBOX_SRC) \
                      $(COMMON_SRC)
@@ -76,7 +76,7 @@ SIMD_DEMO_SRCS	:=	src/phase2_sandbox/sandbox_demos/simd_template.c	\
 					$(SANDBOX_SRC) \
 					$(COMMON_SRC)
 
-SIMD_SRCS		:=	src/phase2_sandbox/simd.c		\
+FUZZ_SIMD_SRCS		:=	src/phase2_sandbox/fuzzer_simd.c		\
 					src/phase2_sandbox/sandbox_demos/simd_template_asm.S \
 					$(SANDBOX_SRC) \
 					$(COMMON_SRC)
@@ -86,7 +86,7 @@ TEST			?= 0xe1a00001
 
 .PHONY: all clean $(MACRO_VALID)
 
-all:	$(DISPATCHER) $(WORKER) $(MACRO_VALID) $(REGS_DEMO) $(PMU_DEMO) $(ARITHMETIC) $(MEMACCESS) $(CONTROL_FLOW_DEMO) $(CONTROL_F) $(SIMD_DEMO) $(SIMD)
+all:	$(DISPATCHER) $(WORKER) $(MACRO_VALID) $(REGS_DEMO) $(PMU_DEMO) $(FUZZ_ARITHMETIC) $(FUZZ_MEMACCESS) $(CONTROL_FLOW_DEMO) $(FUZZ_CONTROL_FLOW) $(SIMD_DEMO) $(FUZZ_SIMD)
 
 $(DISPATCHER): CFLAGS += -DNUM_CORES=$(NUM_CORES)
 
@@ -108,26 +108,26 @@ $(REGS_DEMO): $(REGS_DOBJS)
 $(PMU_DEMO): $(PMU_DSRCS)
 	$(CC) $(CFLAGS) $^ -o $(PMU_DEMO)
 
-$(ARITHMETIC): $(ARITHMETIC_OBJS)
+$(FUZZ_ARITHMETIC): $(FUZZ_ARITHMETIC_OBJS)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(MEMACCESS): $(MEMACCESS_SRCS)
+$(FUZZ_MEMACCESS): $(FUZZ_MEMACCESS_SRCS)
 	$(CC) $(CFLAGS) $^ -o $@
 
 $(CONTROL_FLOW_DEMO): $(CONTROL_FLOW_SRCS)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(CONTROL_F): $(CONTROL_FSRCS)
+$(FUZZ_CONTROL_FLOW): $(FUZZ_CONTROL_FLOW_SRCS)
 	$(CC) $(CFLAGS) $^ -o $@
 
 $(SIMD_DEMO): $(SIMD_DEMO_SRCS)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(SIMD): $(SIMD_SRCS)
+$(FUZZ_SIMD): $(FUZZ_SIMD_SRCS)
 	$(CC) $(CFLAGS) $^ -o $@
 
 clean:
-	rm -f $(DISPATCHER) $(WORKER) $(MACRO_VALID) $(REGS_DEMO) $(PMU_DEMO) $(ARITHMETIC) $(MEMACCESS) $(CONTROL_FLOW_DEMO) $(CONTROL_F) $(SIMD_DEMO) $(SIMD)
+	rm -f $(DISPATCHER) $(WORKER) $(MACRO_VALID) $(REGS_DEMO) $(PMU_DEMO) $(FUZZ_ARITHMETIC) $(FUZZ_MEMACCESS) $(CONTROL_FLOW_DEMO) $(FUZZ_CONTROL_FLOW) $(SIMD_DEMO) $(FUZZ_SIMD)
 	rm -f src/phase2_sandbox/sandbox_demos/*.o src/core/*.o src/phase2_sandbox/*.o
 
 $(filter 0x%,$(MAKECMDGOALS)):
