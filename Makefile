@@ -6,6 +6,8 @@ CFLAGS			:=	-std=c11 -Wall -Wextra  -O0 \
            			-marm -march=armv8-a -mfpu=vfpv4 -fomit-frame-pointer -mfloat-abi=hard \
            			-Iinc \
 
+LDLIBS          :=  -lpthread -lrt
+
 BUILD_DIR   	:= 	build
 DEMO_DIR		:=  $(BUILD_DIR)/demo
 DISPATCHER		:=	$(BUILD_DIR)/dispatcher
@@ -99,40 +101,40 @@ $(DEMO_DIR): | $(BUILD_DIR)
 $(DISPATCHER): CFLAGS += -DNUM_CORES=$(NUM_CORES)
 
 $(DISPATCHER): $(DISPATCHER_SRCS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $^ -o $(DISPATCHER)
+	$(CC) $(CFLAGS) $^ -o $(DISPATCHER) $(LDLIBS)
 
 $(WORKER): $(WORKER_SRCS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $^ -o $(WORKER)
+	$(CC) $(CFLAGS) $^ -o $(WORKER) $(LDLIBS)
 
 $(MACRO_VALID):	$(MACRO_SRCS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -DTEST_INSTRUCTION=$(TEST) $< -o $(MACRO_VALID)
+	$(CC) $(CFLAGS) -DTEST_INSTRUCTION=$(TEST) $< -o $(MACRO_VALID) $(LDLIBS)
 
 %.o: %.S
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(REGS_DEMO): $(REGS_DOBJS) | $(DEMO_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 $(PMU_DEMO): $(PMU_DSRCS) | $(DEMO_DIR)
-	$(CC) $(CFLAGS) $^ -o $(PMU_DEMO)
+	$(CC) $(CFLAGS) $^ -o $(PMU_DEMO) $(LDLIBS)
 
 $(FUZZ_ARITHMETIC): $(FUZZ_ARITHMETIC_OBJS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 $(FUZZ_MEMACCESS): $(FUZZ_MEMACCESS_SRCS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 $(CONTROL_FLOW_DEMO): $(CONTROL_FLOW_SRCS) | $(DEMO_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 $(FUZZ_CONTROL_FLOW): $(FUZZ_CONTROL_FLOW_SRCS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 $(SIMD_DEMO): $(SIMD_DEMO_SRCS) | $(DEMO_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 $(FUZZ_SIMD): $(FUZZ_SIMD_SRCS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 clean:
 	rm -f $(DISPATCHER) $(WORKER) $(MACRO_VALID) $(REGS_DEMO) $(PMU_DEMO) $(FUZZ_ARITHMETIC) $(FUZZ_MEMACCESS) $(CONTROL_FLOW_DEMO) $(FUZZ_CONTROL_FLOW) $(SIMD_DEMO) $(FUZZ_SIMD)
