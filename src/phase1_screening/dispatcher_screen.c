@@ -3,6 +3,7 @@
 #include "config.h"
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 // #define NUM_CORES 4 // Removed: determined by args
 #define DEFAULT_CONFIG_PATH "config/project.conf"
@@ -90,13 +91,21 @@ int main(int argc, char *argv[]) {
     /* Load config if available (CLI still takes precedence) */
     (void)project_config_load(&cfg, config_path);
 
+    int is_fuzzer = (worker_path && strstr(worker_path, "fuzzer") != NULL);
+
     if (input_dir == NULL || input_dir[0] == '\0') {
-        if (cfg.phase1_input_dir[0] != '\0') {
+        if (is_fuzzer && cfg.phase2_input_dir[0] != '\0') {
+            input_dir = cfg.phase2_input_dir;
+        } else if (!is_fuzzer && cfg.phase1_input_dir[0] != '\0') {
             input_dir = cfg.phase1_input_dir;
         }
     }
     if (output_dir == NULL || output_dir[0] == '\0') {
-        output_dir = cfg.phase1_output_dir;
+        if (is_fuzzer && cfg.phase2_output_dir[0] != '\0') {
+            output_dir = cfg.phase2_output_dir;
+        } else if (!is_fuzzer) {
+            output_dir = cfg.phase1_output_dir;
+        }
     }
 
     // Validation: Ensure all arguments are provided
@@ -155,8 +164,31 @@ int main(int argc, char *argv[]) {
                     
                     char file_num_str[20];
                     snprintf(file_num_str, sizeof(file_num_str), "%d", current_file);
-                    
-                    execl(worker_path, worker_path, file_num_str, output_dir, input_dir, NULL);
+
+                    int is_fuzzer = (strstr(worker_path, "fuzzer") != NULL);
+
+                    if (is_fuzzer) {
+                        char *fuzzer_argv[8];
+                        int arg_idx = 0;
+                        fuzzer_argv[arg_idx++] = worker_path;
+                        
+                        if (input_dir && input_dir[0] != '\0') {
+                            fuzzer_argv[arg_idx++] = "-i";
+                            fuzzer_argv[arg_idx++] = (char*)input_dir;
+                        }
+
+                        if (output_dir && output_dir[0] != '\0') {
+                            fuzzer_argv[arg_idx++] = "-o";
+                            fuzzer_argv[arg_idx++] = (char*)output_dir;
+                        }
+                        
+                        fuzzer_argv[arg_idx++] = file_num_str;
+                        fuzzer_argv[arg_idx] = NULL;
+                        
+                        execv(worker_path, fuzzer_argv);
+                    } else {
+                        execl(worker_path, worker_path, file_num_str, output_dir, input_dir, NULL);
+                    }
                     perror("Worker exec failed");
                     _exit(1);
                 } else {
