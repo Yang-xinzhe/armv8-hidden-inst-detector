@@ -205,6 +205,10 @@ int main(int argc, char *argv[]) {
                 continue; 
             }
 
+            if (res.ld_result > 0 && res.st_result > 0) {
+                continue;
+            }
+
             if (res.ld_result > 0 && res.ld_result < 20) {
                 range_bitmap_mark_ld(&rb, insn);
                 // printf("ldr: 0x%x\n", insn);
