@@ -1,4 +1,7 @@
 #include "pmu_counter.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static inline uint32_t read_pmcr(void)
 {
@@ -83,6 +86,48 @@ static inline void write_pmccntr(uint32_t v)
     __asm__ __volatile__("mcr p15, 0, %0, c9, c13, 0" :: "r"(v));
 }
 
+/* Helper to get CPU info from /proc/cpuinfo */
+static void get_cpu_info(uint32_t *implementer, uint32_t *part) {
+    *implementer = 0;
+    *part = 0;
+
+    int cpu_id = sched_getcpu();
+    if (cpu_id < 0) cpu_id = 0;
+
+    FILE *f = fopen("/proc/cpuinfo", "r");
+    if (!f) return;
+
+    char line[256];
+    int current_processor = -1;
+
+    while (fgets(line, sizeof(line), f)) {
+        if (strncmp(line, "processor", 9) == 0) {
+            char *p = strchr(line, ':');
+            if (p) {
+                current_processor = atoi(p + 1);
+            }
+        }
+
+        if (current_processor == cpu_id) {
+            if (strstr(line, "CPU implementer")) {
+                char *p = strchr(line, ':');
+                if (p) {
+                    *implementer = (uint32_t)strtoul(p + 1, NULL, 0);
+                }
+            }
+            if (strstr(line, "CPU part")) {
+                char *p = strchr(line, ':');
+                if (p) {
+                    *part = (uint32_t)strtoul(p + 1, NULL, 0);
+                }
+            }
+        }
+
+        if (*implementer != 0 && *part != 0) break;
+    }
+    fclose(f);
+}
+
 void pmu_init(void)
 {
     uint32_t v;
@@ -101,19 +146,37 @@ void pmu_init(void)
     v |= (1u << 2);  // C: reset cycle counter
     write_pmcr(v);
 
-    /* 3) 配置 event type：
-     *    counter0: LD_RETIRED = 0x06
-     *    counter1: ST_RETIRED = 0x07
-     *    通过 PMSELR + PMXEVTYPER 来设置
-     */
+    /* 3) 识别 CPU 并选择 Event */
+    uint32_t implementer = 0;
+    uint32_t part_num = 0;
+    get_cpu_info(&implementer, &part_num);
 
-    /* counter0 -> LD_RETIRED (0x06) */
+    // printf("[PMU Init] /proc/cpuinfo -> Impl=0x%x, Part=0x%x\n", implementer, part_num);
+
+    /* 默认使用 A53/A55 的 Retired 事件 */
+    uint32_t ld_evt = 0x06; // LD_RETIRED
+    uint32_t st_evt = 0x07; // ST_RETIRED
+
+    if (implementer == 0x41) { // ARM Limited
+        if (part_num == 0xD08) {
+            /* Cortex-A72 (0xD08): 使用 SPEC 事件 */
+            ld_evt = 0x70; // LD_SPEC
+            st_evt = 0x71; // ST_SPEC
+        }
+    } else if (implementer == 0x4E) { // Nvidia
+        /* Nvidia Carmel 等核心 */
+        // printf("[PMU Warning] Nvidia CPU detected. Using default 0x06/0x07.\n");
+        ld_evt = 0x70; // LD_SPEC
+        st_evt = 0x71; // ST_SPEC
+    }
+
+    /* counter0 -> Load Event */
     write_pmselr(0);
-    write_pmxevtyper(0x06);
+    write_pmxevtyper(ld_evt);
 
-    /* counter1 -> ST_RETIRED (0x07) */
+    /* counter1 -> Store Event */
     write_pmselr(1);
-    write_pmxevtyper(0x07);
+    write_pmxevtyper(st_evt);
 
     /* 4) 清零各自的 counter 值 */
     write_pmevcntrN(0, 0);
@@ -127,8 +190,4 @@ void pmu_init(void)
      */
     uint32_t mask = (1u << 0) | (1u << 1) | (1u << 31);
     write_pmcntenset(mask);
-
-    // /* 打印当前 PMCNTENSET 状态 */
-    // uint32_t cnt_en = read_pmcntenset();
-    // printf("PMCNTENSET after init: 0x%08x\n", cnt_en);
 }
