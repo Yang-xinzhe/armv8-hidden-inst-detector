@@ -61,10 +61,9 @@ static int reg_bitmap_flush(RegEffectBitmap *rb, FILE *file)
     if (!(r->plane_mask & RB_MASK_CPSR) || !r->planes[RB_PLANE_CPSR]) return -1;
     if (fwrite(r->planes[RB_PLANE_CPSR], 1, r->size, file) != r->size) return -1;
 
-    /* 写 sp_changed 位图 (RB_PLANE_SP) */
-    if ((r->plane_mask & RB_MASK_SP) && r->planes[RB_PLANE_SP]) {
-        if (fwrite(r->planes[RB_PLANE_SP], 1, r->size, file) != r->size) return -1;
-    }
+    /* 写 sp_changed 位图 (RB_PLANE_SP)，即使全 0 也写，保持格式一致 */
+    if (!(r->plane_mask & RB_MASK_SP) || !r->planes[RB_PLANE_SP]) return -1;
+    if (fwrite(r->planes[RB_PLANE_SP], 1, r->size, file) != r->size) return -1;
 
     return 0;
 }
