@@ -103,6 +103,7 @@ int main(int argc, char *argv[]) {
     init_signal_handler(signal_handler, SIGSEGV,   SA_NONE);
     init_signal_handler(signal_handler, SIGTRAP,   SA_NONE);
     init_signal_handler(signal_handler, SIGBUS,    SA_NONE);
+    init_signal_handler(signal_handler, SIGABRT,   SA_NONE);
 
     init_signal_handler(signal_handler, SIGRTMIN,  SA_NODEFER);
     init_signal_handler(signal_handler, SIGVTALRM, SA_NODEFER);
