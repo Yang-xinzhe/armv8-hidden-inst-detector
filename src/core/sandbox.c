@@ -15,7 +15,7 @@ sigjmp_buf escape_env;
 
 timer_t watchdog_timer;
 
-uint8_t sig_stack_array[MY_SIGSTKSZ];
+uint8_t sig_stack_array[MY_SIGSTKSZ] __attribute__((aligned(16)));
 
 stack_t sig_stack = {
     .ss_size = MY_SIGSTKSZ,
