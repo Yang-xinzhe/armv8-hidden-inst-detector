@@ -158,7 +158,7 @@ void pmu_init(void)
     uint32_t st_evt = 0x07; // ST_RETIRED
 
     if (implementer == 0x41) { // ARM Limited
-        if (part_num == 0xD08) {
+        if (part_num == 0xD08 || part_num == 0xD0B) {
             /* Cortex-A72 (0xD08): 使用 SPEC 事件 */
             ld_evt = 0x70; // LD_SPEC
             st_evt = 0x71; // ST_SPEC
