@@ -105,8 +105,13 @@ def _worker(args):
 
 
 def main():
-    bitmap_dir = Path("bitmap_results")
-    out_dir = Path("decoded_ranges")
+    bitmap_dir = Path("experiments/phase_1/bitmap_results")
+    out_dir = Path("experiments/phase_1/decoded_ranges")
+
+    if len(sys.argv) > 1:
+        bitmap_dir = Path(sys.argv[1])
+    if len(sys.argv) > 2:
+        out_dir = Path(sys.argv[2])
 
     if not bitmap_dir.is_dir():
         print(f"bitmap directory not found: {bitmap_dir}")
