@@ -1,0 +1,63 @@
+================================================================================
+功能性隐藏指令归类统计报告 (按指令名聚合)
+================================================================================
+
+总隐藏指令数: 54,281,388
+唯一指令名数量: 50
+
+--------------------------------------------------------------------------------
+指令名统计:
+--------------------------------------------------------------------------------
+
+Instruction Name                                             | Total Count     | Unique Opcodes
+------------------------------------------------------------------------------------------
+STRT                                                         | 11,773,795      | 32
+STRBT                                                        | 11,586,559      | 32
+LDRBT                                                        | 11,044,301      | 32
+LDRT                                                         | 11,015,656      | 32
+UNDEFINED (Cat 010)                                          | 3,213,351       | 8
+UNDEFINED (Cat 000)                                          | 2,190,745       | 15
+UNDEFINED (Cat 011)                                          | 424,864         | 4
+STRHT                                                        | 394,529         | 256
+LDRSBT                                                       | 389,982         | 256
+LDRSHT                                                       | 389,694         | 256
+LDRHT                                                        | 389,485         | 256
+MOV, MOVS (immediate)                                        | 339,866         | 8
+UNDEFINED (Cat 001)                                          | 266,066         | 5
+VQRDMULH                                                     | 78,308          | 16
+VQDMULH                                                      | 78,172          | 16
+VCVT (between floating-point and fixed-point, floating-point) | 66,121          | 480
+VSTM, VSTMDB, VSTMIA - Increment After variant               | 65,712          | 533
+VLDM, VLDMDB, VLDMIA - Increment After variant               | 65,484          | 536
+VLDM, VLDMDB, VLDMIA - Decrement Before variant              | 52,059          | 536
+VSTM, VSTMDB, VSTMIA - Decrement Before variant              | 51,305          | 529
+VQDMULL                                                      | 30,720          | 8
+VQDMLAL                                                      | 28,790          | 8
+VQDMLSL                                                      | 28,785          | 8
+VST4 (single 4-element structure from one lane)              | 28,348          | 47
+VST1 (multiple single elements)                              | 27,696          | 63
+VST2 (single 2-element structure from one lane)              | 25,518          | 47
+VLD4 (single 4-element structure to one lane)                | 20,766          | 47
+VLD2 (single 2-element structure to one lane)                | 19,595          | 47
+VLD1 (multiple single elements)                              | 18,808          | 63
+VST2 (multiple 2-element structures)                         | 17,586          | 48
+VCVTR                                                        | 17,030          | 960
+VCVT (floating-point to integer, floating-point)             | 17,016          | 960
+VST3 (single 3-element structure from one lane)              | 13,464          | 47
+VST1 (single element from one lane)                          | 12,856          | 47
+VLD2 (multiple 2-element structures)                         | 12,216          | 48
+VST4 (multiple 4-element structures)                         | 11,926          | 32
+VLD1 (single element to one lane)                            | 10,334          | 47
+VLD3 (single 3-element structure to one lane)                | 10,132          | 47
+VST3 (multiple 3-element structures)                         | 7,813           | 32
+VLD4 (multiple 4-element structures)                         | 7,560           | 32
+VLD4 (single 4-element structure to all lanes)               | 5,880           | 15
+VLD2 (single 2-element structure to all lanes)               | 5,400           | 15
+VLD3 (multiple 3-element structures)                         | 5,219           | 32
+VLD1 (single element to all lanes)                           | 4,575           | 15
+VQRDMLAH                                                     | 3,892           | 4
+VCMPE                                                        | 3,680           | 318
+VCMP                                                         | 3,582           | 322
+VLD3 (single 3-element structure to all lanes)               | 2,610           | 15
+UNDEFINED (Cat 111)                                          | 2,097           | 1
+VSHLL                                                        | 1,440           | 1

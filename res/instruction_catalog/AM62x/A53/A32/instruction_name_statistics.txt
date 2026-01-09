@@ -1,0 +1,35 @@
+================================================================================
+功能性隐藏指令归类统计报告 (按指令名聚合)
+================================================================================
+
+总隐藏指令数: 18,360,064
+唯一指令名数量: 22
+
+--------------------------------------------------------------------------------
+指令名统计:
+--------------------------------------------------------------------------------
+
+Instruction Name                                             | Total Count     | Unique Opcodes
+------------------------------------------------------------------------------------------
+MOV, MOVS (immediate)                                        | 7,340,150       | 8
+UNDEFINED (Cat 010)                                          | 3,569,091       | 8
+UNDEFINED (Cat 011)                                          | 2,645,510       | 4
+UNDEFINED (Cat 001)                                          | 2,101,012       | 5
+LDRBT                                                        | 915,968         | 4
+LDRT                                                         | 883,816         | 4
+UNDEFINED (Cat 000)                                          | 464,085         | 4
+VCVT (between floating-point and fixed-point, floating-point) | 88,079          | 480
+VQRDMULH                                                     | 78,298          | 16
+VQDMULH                                                      | 78,171          | 16
+VQDMULL                                                      | 30,718          | 8
+VQDMLAL                                                      | 28,790          | 8
+VQDMLSL                                                      | 28,788          | 8
+VLDM, VLDMDB, VLDMIA - Increment After variant               | 24,053          | 93
+VCVT (floating-point to integer, floating-point)             | 22,584          | 960
+VCVTR                                                        | 22,584          | 960
+VSTM, VSTMDB, VSTMIA - Increment After variant               | 20,598          | 89
+VCMPE                                                        | 4,896           | 312
+VCMP                                                         | 4,766           | 320
+VQRDMLAH                                                     | 3,891           | 4
+UNDEFINED (Cat 111)                                          | 2,776           | 1
+VSHLL                                                        | 1,440           | 1

@@ -47,7 +47,8 @@ def decode_one_file(bin_path: Path, out_dir: Path):
     with bin_path.open("rb") as f:
         header = f.read(8)
         if len(header) != 8:
-            raise ValueError(f"{bin_path} header too short")
+            print(f"{bin_path} header too short")
+            return bin_path.name, is_timeout, 0
 
         # 小端 int32 + int32
         file_number, range_count = struct.unpack("<ii", header)
@@ -57,19 +58,22 @@ def decode_one_file(bin_path: Path, out_dir: Path):
         for i in range(range_count):
             header_bytes = f.read(12)
             if len(header_bytes) != 12:
-                raise ValueError(
-                    f"{bin_path} range {i} header too short "
-                    f"(expected 12 bytes, got {len(header_bytes)})"
-                )
+                print(f"{bin_path} range {i} header too short "
+                      f"(expected 12 bytes, got {len(header_bytes)})")
+                break
 
             start, end, size = struct.unpack("<III", header_bytes)
 
             bitmap = f.read(size)
             if len(bitmap) != size:
-                raise ValueError(
-                    f"{bin_path} range {i} bitmap too short "
-                    f"(expected {size} bytes, got {len(bitmap)})"
-                )
+                print(f"{bin_path} range {i} bitmap too short "
+                      f"(expected {size} bytes, got {len(bitmap)})")
+                # Even if bitmap is short, we can try to process what we have
+                # but it's safer to just break or process the partial bitmap.
+                # Here we'll process the partial bitmap to get as much info as possible.
+                ranges = bitmap_to_ranges(start, start + len(bitmap) * 8, bitmap)
+                all_ranges.extend(ranges)
+                break
 
             ranges = bitmap_to_ranges(start, end, bitmap)
             all_ranges.extend(ranges)

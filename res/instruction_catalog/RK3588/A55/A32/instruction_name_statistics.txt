@@ -1,0 +1,36 @@
+================================================================================
+功能性隐藏指令归类统计报告 (按指令名聚合)
+================================================================================
+
+总隐藏指令数: 17,902,989
+唯一指令名数量: 23
+
+--------------------------------------------------------------------------------
+指令名统计:
+--------------------------------------------------------------------------------
+
+Instruction Name                                             | Total Count     | Unique Opcodes
+------------------------------------------------------------------------------------------
+MOV, MOVS (immediate)                                        | 6,815,864       | 8
+UNDEFINED (Cat 010)                                          | 3,531,536       | 8
+UNDEFINED (Cat 011)                                          | 2,370,528       | 4
+UNDEFINED (Cat 001)                                          | 2,295,632       | 5
+LDRBT                                                        | 883,194         | 4
+LDRT                                                         | 882,561         | 4
+UNDEFINED (Cat 000)                                          | 448,061         | 4
+VCVT (between floating-point and fixed-point, floating-point) | 145,408         | 480
+VQRDMULH                                                     | 79,144          | 16
+VQDMULH                                                      | 78,172          | 16
+VQRDMLAH                                                     | 70,689          | 16
+VQRDMLSH                                                     | 68,616          | 16
+VCVTR                                                        | 37,784          | 960
+VCVT (floating-point to integer, floating-point)             | 37,784          | 960
+VQDMULL                                                      | 30,720          | 8
+VQDMLSL                                                      | 28,788          | 8
+VQDMLAL                                                      | 28,788          | 8
+VLDM, VLDMDB, VLDMIA - Increment After variant               | 24,055          | 93
+VSTM, VSTMDB, VSTMIA - Increment After variant               | 20,561          | 89
+UNDEFINED (Cat 111)                                          | 8,368           | 2
+VCMPE                                                        | 7,712           | 312
+VCMP                                                         | 7,584           | 320
+VSHLL                                                        | 1,440           | 1

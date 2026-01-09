@@ -1,0 +1,10 @@
+Processing complete.
+Total instructions affecting SIMD:   347809
+Total instructions affecting FPSCR:  273149
+Total SIMD instructions (Union):     604423
+
+Output files:
+  SIMD:   simd_insn_simd.txt
+  FPSCR:  simd_insn_fpscr.txt
+  ALL:    simd_insn_all.txt
+  FPSCR Details: simd_insn_fpscr_details.txt

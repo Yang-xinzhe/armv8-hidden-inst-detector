@@ -1,0 +1,14 @@
+Processing complete.
+Total instructions affecting GPR:   12197974
+Total instructions affecting SP:    21889
+Total instructions affecting CPSR:  2019336
+  - Affecting Flags (NZCVQ):      1310720
+  - Affecting Mode (M[4:0]):      0
+Total Arithmetic instructions (Union): 14217311
+
+Output files:
+  GPR:          arithmetic_insn_gpr.txt
+  CPSR:         arithmetic_insn_cpsr.txt
+  SP:           arithmetic_insn_sp.txt
+  ALL:          arithmetic_insn_all.txt
+  CPSR Details: arithmetic_insn_cpsr_details.txt
