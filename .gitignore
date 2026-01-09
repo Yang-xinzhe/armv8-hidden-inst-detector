@@ -57,14 +57,14 @@ dkms.conf
 # Ignore VSCode settings
 .vscode/
 build/
-res/phase_1/bitmap_results/
-res/phase_1/decoded_ranges/
+experiments/phase_1/bitmap_results/
+experiments/phase_1/decoded_ranges/
 *.bin
 *.txt
 
 # Local experiment artifacts (keep repo clean; keep directory placeholder)
-res/**
-!res/.gitkeep
+experiments/**
+!experiments/.gitkeep
 *_details.txt
 memaccess_insn_all.txt
 memaccess_insn_ld.txt
