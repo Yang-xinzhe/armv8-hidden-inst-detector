@@ -5,6 +5,106 @@
 
 void execution_boilerplate(void);
 
+#if defined(TEST_T32_16BIT)
+void execution_boilerplate(void)
+{
+    __asm__ __volatile__(
+        ".syntax unified            \n"
+        ".thumb                     \n"
+        ".align 2                   \n"
+        
+        ".global boilerplate_start  \n"
+        "boilerplate_start:         \n"
+
+        "push {r0-r12, lr}          \n" 
+        "vmov s0, sp                \n"
+
+        "mov r0, %[reg_init]        \n"
+        "mov r1, %[reg_init]        \n"
+        "mov r2, %[reg_init]        \n"
+        "mov r3, %[reg_init]        \n"
+        "mov r4, %[reg_init]        \n"
+        "mov r5, %[reg_init]        \n"
+        "mov r6, %[reg_init]        \n"
+        "mov r7, %[reg_init]        \n"
+        "mov r8, %[reg_init]        \n"
+        "mov r9, %[reg_init]        \n"
+        "mov r10, %[reg_init]       \n"
+        "mov r11, %[reg_init]       \n"
+        "mov r12, %[reg_init]       \n"
+        "mov lr, %[reg_init]        \n"
+        "mov sp, %[reg_init]        \n"
+
+        "msr APSR_nzcvq, r0          \n"
+
+        ".align 2                   \n"
+        ".global insn_location      \n"
+        "insn_location:             \n"
+        // 16bits padding
+        ".space 4                   \n" 
+
+        "vmov sp, s0                \n"
+        "pop {r0-r12, lr}           \n"
+        "bx lr                      \n"
+        
+        ".align 2                   \n"
+        ".global boilerplate_end    \n"
+        "boilerplate_end:           \n"
+        :
+        : [reg_init] "n" (0)
+        );
+}
+
+#elif defined(TEST_T32_32BIT)
+void execution_boilerplate(void)
+{
+    __asm__ __volatile__(
+        ".syntax unified            \n"
+        ".thumb                     \n"
+        ".align 2                   \n"
+        
+        ".global boilerplate_start  \n"
+        "boilerplate_start:         \n"
+
+        "push {r0-r12, lr}          \n" 
+        "vmov s0, sp                \n"
+
+        "mov r0, %[reg_init]        \n"
+        "mov r1, %[reg_init]        \n"
+        "mov r2, %[reg_init]        \n"
+        "mov r3, %[reg_init]        \n"
+        "mov r4, %[reg_init]        \n"
+        "mov r5, %[reg_init]        \n"
+        "mov r6, %[reg_init]        \n"
+        "mov r7, %[reg_init]        \n"
+        "mov r8, %[reg_init]        \n"
+        "mov r9, %[reg_init]        \n"
+        "mov r10, %[reg_init]       \n"
+        "mov r11, %[reg_init]       \n"
+        "mov r12, %[reg_init]       \n"
+        "mov lr, %[reg_init]        \n"
+        "mov sp, %[reg_init]        \n"
+
+        "msr APSR_nzcvq, r0          \n"
+
+        ".align 2                   \n"
+        ".global insn_location      \n"
+        "insn_location:             \n"
+        ".space 4                   \n" 
+
+        "vmov sp, s0                \n"
+        "pop {r0-r12, lr}           \n"
+        "bx lr                      \n"
+
+        ".align 2                   \n"
+        ".global boilerplate_end    \n"
+        "boilerplate_end:           \n"
+        :
+        : [reg_init] "n" (0)
+        );
+}
+
+#else
 void execution_boilerplate(void)
 {
         __asm__ __volatile__(
@@ -62,7 +162,7 @@ void execution_boilerplate(void)
             );
 
 }
-
+#endif
 
 static int count_ranges_in_file(FILE *f, uint64_t *total_insns_out)
 {
@@ -210,6 +310,11 @@ int main(int argc, const char* argv[]) {
     char line[256];
     int  current_range_index = 0;
 
+#if defined(TEST_T32_16BIT) || defined(TEST_T32_32BIT)
+    extern int g_sandbox_thumb_mode;
+    g_sandbox_thumb_mode = 1;
+#endif
+
     while (fgets(line, sizeof(line), res_file) != NULL) {
         uint32_t range_start, range_end;
         if (sscanf(line, "[%u, %u]", &range_start, &range_end) != 2) {
@@ -237,9 +342,12 @@ int main(int argc, const char* argv[]) {
                 perror("init_insn_page failed in loop");
                 break;
             }
-
+            uint32_t insn_to_write = insn;
+        #if defined(TEST_T32_16BIT)
+            insn_to_write = (insn & 0xFFFF) | (0xBF00 << 16); // 0xBF Thumb NOP
+        #endif
             uint8_t insn_bytes[4];
-            size_t buf_len = fill_insn_buffer(insn_bytes, sizeof(insn_bytes), insn);
+            size_t buf_len = fill_insn_buffer(insn_bytes, sizeof(insn_bytes), insn_to_write);
 
             execute_insn_page_screen(insn_bytes, buf_len);
 

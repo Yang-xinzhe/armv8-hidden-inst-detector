@@ -20,6 +20,8 @@ extern char boilerplate_start, boilerplate_end, insn_location;
 extern sigjmp_buf escape_env;
 extern timer_t watchdog_timer;
 
+extern int g_sandbox_thumb_mode;
+
 extern uint8_t sig_stack_array[MY_SIGSTKSZ];
 extern stack_t sig_stack;
 

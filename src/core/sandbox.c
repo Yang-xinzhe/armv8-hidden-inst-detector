@@ -15,6 +15,8 @@ sigjmp_buf escape_env;
 
 timer_t watchdog_timer;
 
+int g_sandbox_thumb_mode = 0; // 0 for ARM, 1 for Thumb
+
 uint8_t sig_stack_array[MY_SIGSTKSZ] __attribute__((aligned(16)));
 
 stack_t sig_stack = {
@@ -89,12 +91,16 @@ int init_insn_page(void)
         return 1;
     }
 
-    uint32_t boilerplate_length = (&boilerplate_end - &boilerplate_start) / 4;
+    uintptr_t src_addr = (uintptr_t)&boilerplate_start & ~1;
+    uintptr_t end_addr = (uintptr_t)&boilerplate_end & ~1;
+    size_t boilerplate_length = end_addr - src_addr;
+    // uint32_t boilerplate_length = (&boilerplate_end - &boilerplate_start) / 4;
 
     // Load the boilerplate assembly
-    uint32_t i;
-    for (i = 0; i < boilerplate_length; ++i)
-        ((uint32_t *)insn_page)[i] = ((uint32_t *)&boilerplate_start)[i];
+    // uint32_t i;
+    // for (i = 0; i < boilerplate_length; ++i)
+    //     ((uint32_t *)insn_page)[i] = ((uint32_t *)&boilerplate_start)[i];
+    memcpy(insn_page, (void*)src_addr, boilerplate_length);
 
     insn_offset = (&insn_location - &boilerplate_start) / 4;
 
@@ -154,7 +160,13 @@ void execute_insn_page(uint8_t *insn_bytes, size_t insn_length, void *ctx, exec_
 
 static void exec_std(void *addr, void *ctx) {
     (void)ctx;
-    void (*exec_page)() = (void (*)())addr;
+    uintptr_t exec_addr = (uintptr_t)addr;
+
+    if (g_sandbox_thumb_mode) {
+        exec_addr |= 1;
+    }
+
+    void (*exec_page)() = (void (*)())exec_addr;
     exec_page();
 }
 
