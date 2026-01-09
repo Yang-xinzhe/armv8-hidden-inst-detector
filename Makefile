@@ -1,35 +1,85 @@
-CC				:=	arm-linux-gnueabihf-gcc
+ARCH			?=	arm
 
+ifeq ($(ARCH), aarch64)
+CC				:=	aarch64-linux-gnu-gcc
+CFLAGS			:=	-std=c11 -Wall -Wextra -O0 \
+					-march=armv8-a -fomit-frame-pointer \
+					-Iinc
+else
+CC				:=	arm-linux-gnueabihf-gcc
+CFLAGS			:=	-std=c11 -Wall -Wextra -O0 \
+					-marm -march=armv8-a -mfpu=vfpv4 -fomit-frame-pointer -mfloat-abi=hard \
+					-Iinc
+endif
+
+# ---------------------------------------------------------------------------
+# Mode Selection: a32 (default), t32_16, t32_32
+# ---------------------------------------------------------------------------
+MODE ?= a32
+ASM_SUFFIX := a32
+BIN_SUFFIX := _a32
+
+ifeq ($(MODE), t32_16)
+    CFLAGS += -DTEST_T32_16BIT
+    ASM_SUFFIX := t32_16
+    BIN_SUFFIX := _t32_16
+else ifeq ($(MODE), t32_32)
+    CFLAGS += -DTEST_T32_32BIT
+    ASM_SUFFIX := t32_32
+    BIN_SUFFIX := _t32_32
+endif
+
+# ---------------------------------------------------------------------------
+# Directories & Paths
+# ---------------------------------------------------------------------------
 NUM_CORES		?=	4
 
-CFLAGS			:=	-std=c11 -Wall -Wextra  -O0 \
-           			-marm -march=armv8-a -mfpu=vfpv4 -fomit-frame-pointer -mfloat-abi=hard \
-           			-Iinc \
-
-LDLIBS          :=  -lpthread -lrt
+LDLIBS          :=  -lpthread -lrt -static
 
 BUILD_DIR   	:= 	build
 DEMO_DIR		:=  $(BUILD_DIR)/demo
-DISPATCHER		:=	$(BUILD_DIR)/dispatcher
-WORKER			:=	$(BUILD_DIR)/worker
-MACRO_VALID		:=	$(BUILD_DIR)/macro_valid
-REGS_DEMO		:=	$(DEMO_DIR)/regs_demo
-PMU_DEMO		:=	$(DEMO_DIR)/pmu_demo
-FUZZ_ARITHMETIC 	:=	$(BUILD_DIR)/fuzzer_arithmetic
-FUZZ_MEMACCESS		:=	$(BUILD_DIR)/fuzzer_memaccess
-CONTROL_FLOW_DEMO := $(DEMO_DIR)/control_flow_demo
-FUZZ_CONTROL_FLOW 	:= 	$(BUILD_DIR)/fuzzer_control_flow
-SIMD_DEMO		:=	$(DEMO_DIR)/simd_demo
-FUZZ_SIMD			:=	$(BUILD_DIR)/fuzzer_simd
 
+# Phase 2 Source Roots
+SANDBOX_ROOT    := src/phase2_sandbox
+HARNESS_ROOT    := $(SANDBOX_ROOT)/harness
+TESTS_ROOT      := $(SANDBOX_ROOT)/tests
+DEMOS_ROOT      := $(SANDBOX_ROOT)/demos
+UTILS_ROOT      := $(SANDBOX_ROOT)/utils
+
+# Common Sources
 COMMON_SRC		:= src/core/cpu_affinity.c 									\
 				   src/core/bitmap.c											\
 				   src/core/config.c											\
 				   src/core/fs_utils.c
-
 SANDBOX_SRC 	:= src/core/sandbox.c
+PMU_COUNTER_SRC := src/core/pmu_counter.c
 
-REGS_TEMPLATE_SRC := src/phase2_sandbox/sandbox_demos/regs_template_asm.S
+# ---------------------------------------------------------------------------
+# Targets
+# ---------------------------------------------------------------------------
+
+# Phase 1 Targets
+DISPATCHER		:=	$(BUILD_DIR)/dispatcher
+WORKER 			:=  $(BUILD_DIR)/worker$(BIN_SUFFIX)
+
+# Phase 2 Utils
+INLINE_ASM_VALIDATOR :=	$(BUILD_DIR)/inline_asm_validator
+
+# Phase 2 Demos
+DEMO_REGS		:=	$(DEMO_DIR)/demo_regs$(BIN_SUFFIX)
+DEMO_PMU		:=	$(DEMO_DIR)/demo_pmu$(BIN_SUFFIX)
+DEMO_SIMD		:=	$(DEMO_DIR)/demo_simd$(BIN_SUFFIX)
+DEMO_CTRL_FLOW  :=  $(DEMO_DIR)/demo_control_flow$(BIN_SUFFIX)
+
+# Phase 2 Tests (Functional Tests)
+TEST_ARITHMETIC 	:=	$(BUILD_DIR)/test_arithmetic$(BIN_SUFFIX)
+TEST_MEMORY		    :=	$(BUILD_DIR)/test_memory$(BIN_SUFFIX)
+TEST_SIMD			:=	$(BUILD_DIR)/test_simd$(BIN_SUFFIX)
+TEST_CONTROL_FLOW 	:= 	$(BUILD_DIR)/test_control_flow$(BIN_SUFFIX)
+
+# ---------------------------------------------------------------------------
+# Source Lists (Dynamic based on ASM_SUFFIX)
+# ---------------------------------------------------------------------------
 
 DISPATCHER_SRCS	:= src/phase1_screening/dispatcher_screen.c 				\
 				   $(COMMON_SRC)
@@ -38,59 +88,53 @@ WORKER_SRCS		:= src/phase1_screening/worker_screen.c						\
 				   $(SANDBOX_SRC)											\
 				   $(COMMON_SRC)
 
-MACRO_SRCS		:= src/phase2_sandbox/macro_valid.c
+VALIDATOR_SRCS	:= $(UTILS_ROOT)/inline_asm_validator.c
 
-REGS_DSRCS		:= src/phase2_sandbox/sandbox_demos/regs_template.c 		\
-                   $(SANDBOX_SRC) 											\
-                   $(REGS_TEMPLATE_SRC)
-REGS_DOBJS 		:= $(REGS_DSRCS:.c=.o)
-REGS_DOBJS 		:= $(REGS_DOBJS:.S=.o)
+# Harness Assembly Selection
+HARNESS_REGS_ASM   := $(HARNESS_ROOT)/regs/entry_$(ASM_SUFFIX).S
+HARNESS_PMU_ASM    := $(HARNESS_ROOT)/pmu/entry_$(ASM_SUFFIX).S
+HARNESS_SIMD_ASM   := $(HARNESS_ROOT)/simd/entry_$(ASM_SUFFIX).S
+HARNESS_CTRL_ASM   := $(HARNESS_ROOT)/control_flow/entry_$(ASM_SUFFIX).S
 
-PMU_DSRCS		:= src/phase2_sandbox/sandbox_demos/pmu_template.c				\
-					$(SANDBOX_SRC)\
-				   src/core/pmu_counter.c									\
-				   src/phase2_sandbox/sandbox_demos/pmu_template_asm.S		
-				   
-FUZZ_ARITHMETIC_SRCS := src/phase2_sandbox/fuzzer_arithmetic.c \
-                   $(SANDBOX_SRC) \
-                   $(REGS_TEMPLATE_SRC) \
-                   $(COMMON_SRC)
-FUZZ_ARITHMETIC_OBJS := $(FUZZ_ARITHMETIC_SRCS:.c=.o)
-FUZZ_ARITHMETIC_OBJS := $(FUZZ_ARITHMETIC_OBJS:.S=.o)
-				   
-FUZZ_MEMACCESS_SRCS	:=	src/phase2_sandbox/fuzzer_memaccess.c \
-				   src/core/pmu_counter.c \
-				   $(SANDBOX_SRC) \
-				   $(COMMON_SRC)	\
-				   src/phase2_sandbox/sandbox_demos/pmu_template_asm.S
+# Demos Sources
+DEMO_REGS_SRCS     := $(DEMOS_ROOT)/demo_regs.c $(SANDBOX_SRC) $(HARNESS_REGS_ASM)
+DEMO_PMU_SRCS      := $(DEMOS_ROOT)/demo_pmu.c $(SANDBOX_SRC) $(PMU_COUNTER_SRC) $(HARNESS_PMU_ASM)
+DEMO_SIMD_SRCS     := $(DEMOS_ROOT)/demo_simd.c $(SANDBOX_SRC) $(COMMON_SRC) $(HARNESS_SIMD_ASM)
+DEMO_CTRL_SRCS     := $(DEMOS_ROOT)/demo_control_flow.c $(SANDBOX_SRC) $(COMMON_SRC) $(HARNESS_CTRL_ASM)
 
+# Tests Sources
+TEST_ARITHMETIC_SRCS := $(TESTS_ROOT)/test_arithmetic.c \
+                        $(SANDBOX_SRC) \
+                        $(HARNESS_REGS_ASM) \
+                        $(COMMON_SRC)
 
-CONTROL_FLOW_SRCS := src/phase2_sandbox/sandbox_demos/control_flow.c \
-					 src/phase2_sandbox/sandbox_demos/control_flow_asm.S \
-                     $(SANDBOX_SRC) \
-                     $(COMMON_SRC)
+TEST_MEMORY_SRCS     := $(TESTS_ROOT)/test_memory.c \
+                        $(PMU_COUNTER_SRC) \
+                        $(SANDBOX_SRC) \
+                        $(COMMON_SRC) \
+                        $(HARNESS_PMU_ASM)
 
-FUZZ_CONTROL_FLOW_SRCS := src/phase2_sandbox/fuzzer_control_flow.c \
-					 src/phase2_sandbox/sandbox_demos/control_flow_asm.S \
-                     $(SANDBOX_SRC) \
-                     $(COMMON_SRC)
+TEST_SIMD_SRCS       := $(TESTS_ROOT)/test_simd.c \
+                        $(SANDBOX_SRC) \
+                        $(COMMON_SRC) \
+                        $(HARNESS_SIMD_ASM)
 
-SIMD_DEMO_SRCS	:=	src/phase2_sandbox/sandbox_demos/simd_template.c	\
-					src/phase2_sandbox/sandbox_demos/simd_template_asm.S \
-					$(SANDBOX_SRC) \
-					$(COMMON_SRC)
+TEST_CTRL_SRCS       := $(TESTS_ROOT)/test_control_flow.c \
+                        $(SANDBOX_SRC) \
+                        $(COMMON_SRC) \
+                        $(HARNESS_CTRL_ASM)
 
-FUZZ_SIMD_SRCS		:=	src/phase2_sandbox/fuzzer_simd.c		\
-					src/phase2_sandbox/sandbox_demos/simd_template_asm.S \
-					$(SANDBOX_SRC) \
-					$(COMMON_SRC)
-
+# ---------------------------------------------------------------------------
+# Build Rules
+# ---------------------------------------------------------------------------
 
 TEST			?= 0xe1a00001
 
-.PHONY: all clean $(MACRO_VALID)
+.PHONY: all clean $(INLINE_ASM_VALIDATOR)
 
-all:	$(DISPATCHER) $(WORKER) $(MACRO_VALID) $(REGS_DEMO) $(PMU_DEMO) $(FUZZ_ARITHMETIC) $(FUZZ_MEMACCESS) $(CONTROL_FLOW_DEMO) $(FUZZ_CONTROL_FLOW) $(SIMD_DEMO) $(FUZZ_SIMD)
+all:	$(DISPATCHER) $(WORKER) $(INLINE_ASM_VALIDATOR) \
+		$(DEMO_REGS) $(DEMO_PMU) $(DEMO_SIMD) $(DEMO_CTRL_FLOW) \
+		$(TEST_ARITHMETIC) $(TEST_MEMORY) $(TEST_SIMD) $(TEST_CONTROL_FLOW)
 
 $(BUILD_DIR):
 	mkdir -p $@
@@ -99,49 +143,53 @@ $(DEMO_DIR): | $(BUILD_DIR)
 	mkdir -p $@
 
 $(DISPATCHER): CFLAGS += -DNUM_CORES=$(NUM_CORES)
-
 $(DISPATCHER): $(DISPATCHER_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $(DISPATCHER) $(LDLIBS)
 
 $(WORKER): $(WORKER_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $(WORKER) $(LDLIBS)
 
-$(MACRO_VALID):	$(MACRO_SRCS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -DTEST_INSTRUCTION=$(TEST) $< -o $(MACRO_VALID) $(LDLIBS)
+$(INLINE_ASM_VALIDATOR): $(VALIDATOR_SRCS) | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -DTEST_INSTRUCTION=$(TEST) $< -o $(INLINE_ASM_VALIDATOR) $(LDLIBS)
 
+# Compile Assembly
 %.o: %.S
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(REGS_DEMO): $(REGS_DOBJS) | $(DEMO_DIR)
+# Demos
+$(DEMO_REGS): $(DEMO_REGS_SRCS) | $(DEMO_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
-$(PMU_DEMO): $(PMU_DSRCS) | $(DEMO_DIR)
-	$(CC) $(CFLAGS) $^ -o $(PMU_DEMO) $(LDLIBS)
-
-$(FUZZ_ARITHMETIC): $(FUZZ_ARITHMETIC_OBJS) | $(BUILD_DIR)
+$(DEMO_PMU): $(DEMO_PMU_SRCS) | $(DEMO_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
-$(FUZZ_MEMACCESS): $(FUZZ_MEMACCESS_SRCS) | $(BUILD_DIR)
+$(DEMO_SIMD): $(DEMO_SIMD_SRCS) | $(DEMO_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
-$(CONTROL_FLOW_DEMO): $(CONTROL_FLOW_SRCS) | $(DEMO_DIR)
+$(DEMO_CTRL_FLOW): $(DEMO_CTRL_SRCS) | $(DEMO_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
-$(FUZZ_CONTROL_FLOW): $(FUZZ_CONTROL_FLOW_SRCS) | $(BUILD_DIR)
+# Tests
+$(TEST_ARITHMETIC): $(TEST_ARITHMETIC_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
-$(SIMD_DEMO): $(SIMD_DEMO_SRCS) | $(DEMO_DIR)
+$(TEST_MEMORY): $(TEST_MEMORY_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
-$(FUZZ_SIMD): $(FUZZ_SIMD_SRCS) | $(BUILD_DIR)
+$(TEST_SIMD): $(TEST_SIMD_SRCS) | $(BUILD_DIR)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
+
+$(TEST_CONTROL_FLOW): $(TEST_CTRL_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 clean:
-	rm -f $(DISPATCHER) $(WORKER) $(MACRO_VALID) $(REGS_DEMO) $(PMU_DEMO) $(FUZZ_ARITHMETIC) $(FUZZ_MEMACCESS) $(CONTROL_FLOW_DEMO) $(FUZZ_CONTROL_FLOW) $(SIMD_DEMO) $(FUZZ_SIMD)
-	rm -f src/phase2_sandbox/sandbox_demos/*.o src/core/*.o src/phase2_sandbox/*.o
+	rm -f $(DISPATCHER) $(WORKER) $(INLINE_ASM_VALIDATOR)
+	rm -f $(DEMO_DIR)/* $(BUILD_DIR)/test_*
+	rm -f src/phase2_sandbox/harness/*/*.o src/core/*.o
+	rm -rf $(BUILD_DIR)
 
 $(filter 0x%,$(MAKECMDGOALS)):
-	$(MAKE) $(MACRO_VALID) TEST=$@
+	$(MAKE) $(INLINE_ASM_VALIDATOR) TEST=$@
 
 %:
 	@:
