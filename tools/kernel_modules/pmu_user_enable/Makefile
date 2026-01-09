@@ -2,8 +2,8 @@
 
 obj-m += pmu_user.o
 
-# 这里改成你实际的内核源码路径
-KDIR ?= ~/linux
+
+KDIR ?= /lib/modules/$(shell uname -r)/build
 
 # 交叉工具链前缀（下面会讲如何安装）
 CROSS_COMPILE ?= aarch64-linux-gnu-

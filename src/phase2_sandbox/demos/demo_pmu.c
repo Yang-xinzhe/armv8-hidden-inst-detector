@@ -1,6 +1,19 @@
 #include "pmu_counter.h"
 #include "sandbox.h"
 
+#include <unistd.h>
+#include <fcntl.h>
+
+void ensure_pmu_enabled() {
+    int fd = open("/proc/pmu_user_enable", O_WRONLY);
+    if (fd >= 0) {
+        if (write(fd, "1", 1) < 0) {
+            // ignore error
+        }
+        close(fd);
+    }
+}
+
 int main(void)
 {
     uint32_t test_ld_st_insns[] = {
@@ -49,6 +62,8 @@ int main(void)
     }
 
     PmuResult res = {0};
+
+    ensure_pmu_enabled();
 
     pmu_init();
 

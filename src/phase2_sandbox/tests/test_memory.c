@@ -20,6 +20,16 @@ static void print_usage(const char *prog)
     fprintf(stderr, "  -o: override phase2_output_dir (base directory)\n");
 }
 
+static void ensure_pmu_enabled() {
+    int fd = open("/proc/pmu_user_enable", O_WRONLY);
+    if (fd >= 0) {
+        if (write(fd, "1", 1) < 0) {
+            // ignore error
+        }
+        close(fd);
+    }
+}
+
 static void build_subdir(char *out, size_t out_sz, const char *base, const char *subdir)
 {
     if (!base || base[0] == '\0') {
@@ -190,6 +200,7 @@ int main(int argc, char *argv[]) {
         }
         
         for (uint32_t insn = range_start; insn < range_end; ++insn) {
+            ensure_pmu_enabled();
             munmap(insn_region, PAGE_SIZE * 3);
             if (init_insn_page() != 0) break;
             pmu_init();

@@ -67,12 +67,16 @@ boilerplate_start:
     @ 恢复寄存器，准备执行测试指令
     pop     {r0-r12, lr}
 
+    vmov    s0, sp
+
     dsb
 
 insn_location:
     nop                         @ 这里会被替换成待测指令
 
     dsb
+
+    vmov    sp, s0
 
     @ --------- 第二段：执行后寄存器状态 ----------
     push    {r0-r12, lr}

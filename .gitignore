@@ -65,3 +65,6 @@ res/phase_1/decoded_ranges/
 # Local experiment artifacts (keep repo clean; keep directory placeholder)
 res/**
 !res/.gitkeep
+*_details.txt
+memaccess_insn_all.txt
+memaccess_insn_ld.txt
