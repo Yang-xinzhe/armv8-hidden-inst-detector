@@ -1,6 +1,6 @@
     .syntax unified
     .cpu cortex-a53
-    .arm
+    .thumb
     .text
     .align 2
 
@@ -11,7 +11,7 @@
 
     .type   test_instruction, %function
 
-    .extern reg_state_base_slot     @ 在 C 里定义的全局指针
+    .extern reg_state_base_slot
 
 @ void test_instruction(void);
 test_instruction:
@@ -48,7 +48,7 @@ boilerplate_start:
     @ ---- 存 r2-r11 (10 个寄存器，总共 40 字节) ----
     add     r1, sp, #8           @ r1 -> 栈上的 r2
     add     r2, r0, #8           @ r2 -> 目标中的 r2
-    ldmia   r1!, {r3-r12}        @ 从栈读 r2-r11 (共 10 word)
+    ldmia   r1!, {r3-r12}        @ 从栈读 r2-r11
     stmia   r2!, {r3-r12}        @ 写入目标 r2-r11
 
     @ ---- 单独处理 r12 ----
@@ -56,13 +56,12 @@ boilerplate_start:
     str     r1, [r0, #48]        @ states[0].r12
 
     @ ---- CPSR ----
-    @ Offset = 13 regs * 4 bytes = 52
-    msr cpsr_f, #0  
-    mrs     r1, cpsr
+    @ T32 Fix: Use mov + msr APSR
+    mov     r1, #0
+    msr     APSR_nzcvq, r1
     
+    mrs     r1, cpsr
     str     r1, [r0, #52]        @ states[0].cpsr
-
-    @ 注意：不再保存 sp, lr, pc
 
     @ 恢复寄存器，准备执行测试指令
     pop     {r0-r12, lr}
@@ -71,8 +70,9 @@ boilerplate_start:
 
     dsb
 
+    .align 2
 insn_location:
-    nop                         @ 这里会被替换成待测指令
+    .space 4                    @ 预留 4 字节给指令 (C 代码负责填充 16位+Padding 或 32位)
 
     dsb
 
@@ -84,7 +84,7 @@ insn_location:
     @ r0 = reg_state_base_slot + 56 => 第二个 RegisterStates
     ldr     r0, =reg_state_base_slot
     ldr     r0, [r0]
-    add     r0, r0, #56          @ sizeof(RegisterStates) = 56 字节
+    add     r0, r0, #56          @ sizeof(RegisterStates) = 56
 
     @ ---- 存 r0 / r1 ----
     ldr     r1, [sp, #0]
@@ -113,5 +113,6 @@ insn_location:
 
     .ltorg
 
+    .align 2
 boilerplate_end:
     .size   test_instruction, .-test_instruction

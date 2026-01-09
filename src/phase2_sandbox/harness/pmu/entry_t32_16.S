@@ -1,28 +1,8 @@
     .syntax unified
     .cpu cortex-a53
+    .thumb
     .text
     .align 2
-
-    /*
-     * 原型（在 C 侧我们会当成 uint64_t (*)(void) 来调用）：
-     *
-     *   uint64_t pmu_template(void);
-     *
-     * 返回值：
-     *   r0 = LD_RETIRED（低 32 bit）
-     *   r1 = ST_RETIRED（高 32 bit）
-     *
-     * 约定：
-     *   - 不使用 r4-r11（避免需要保存/恢复）
-     *   - 只用 r0-r3, ip(r12) 作为 scratch
-     *   - 不访问内存（不 push/pop，不 str/ldr，不 stm/ldm）
-     *
-     * 依赖：
-     *   - 内核已打开 EL0 的 PMU 访问权限 (pmuserenr_el0.EN = 1)
-     *   - 用户态已调用 pmu_init() 配置好：
-     *       counter0 -> LD_RETIRED (0x06)
-     *       counter1 -> ST_RETIRED (0x07)
-     */
 
     .global pmu_template
     .global boilerplate_start
@@ -68,14 +48,18 @@ boilerplate_start:
     mov     r3, #( (1 << 0) | (1 << 1) )   @ mask = 0x3
     mcr     p15, 0, r3, c9, c12, 1        @ PMCNTENSET = 0x3
     isb
-    msr cpsr_f, #0  
+    
+    @ T32 Fix: Use mov + msr APSR
+    mov     r2, #0
+    msr     APSR_nzcvq, r2
+    
     isb
     dsb sy
-    /* =================================================
-     * 5. 被测指令窗口（C 侧会把这一条 nop 覆盖成 hidden insn）
-     * ================================================= */
+    
+    .align 2
 insn_location:
-    nop                                   @ 将被覆盖为被测指令
+    .space 4                              @ 预留 4 字节
+
     dsb sy
     isb                                   @ 确保该指令完成
 
@@ -95,17 +79,11 @@ insn_location:
     isb
     mrc     p15, 0, r1, c9, c13, 2        @ r1 = PMXEVCNTR(1)
 
-    /* 9. 返回：
-     *    r0 = LD
-     *    r1 = ST
-     *    在 C 里当成 uint64_t 返回值：
-     *      val = ((uint64_t)ST << 32) | LD
-     */
     vmov    sp, s0
-    pop     {r2-r12, lr}      @ 注意：这里不能把 r0/r1 弹掉，否则把计数覆盖了
+    pop     {r2-r12, lr}      @ 恢复 r2-r12 (保留 r0/r1 返回值)
 
     bx      lr
 
+    .align 2
 boilerplate_end:
-
     .size   pmu_template, boilerplate_end - pmu_template

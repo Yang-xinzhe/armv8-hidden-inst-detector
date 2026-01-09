@@ -1,5 +1,6 @@
     .syntax unified
     .cpu cortex-a53
+    .thumb
     .text
     .align 2
     .global boilerplate_start
@@ -21,21 +22,25 @@ boilerplate_start:
 
     // 3. 屏障
     isb
-    msr cpsr_f, #0  
+    // T32 Fix: Use mov + msr APSR
+    mov     r0, #0
+    msr     APSR_nzcvq, r0
+    
     isb
     dsb sy
 
+    .align 2
 insn_location:
-    nop             // [Offset 0] 待测指令位 (会被 C 代码覆盖)
+    .space 4        // [Offset 0] 待测指令位 (会被 C 代码覆盖)
+    
     // 陷阱指令 (UDF #0 -> SIGILL)
     // 如果待测指令顺序执行到这里，说明没有跳转
-    .inst 0xe7f001f0 
+    udf #0          // T32 UDF
 
-    // 4. 恢复现场 (仅当 Trap 未生效或特殊跳转时到达这里)
+    // 4. 恢复现场
     vmov sp, s0
     pop {r0-r12, lr}
     bx      lr
 
 boilerplate_end:
-
     .size   control_flow_template, boilerplate_end - control_flow_template
