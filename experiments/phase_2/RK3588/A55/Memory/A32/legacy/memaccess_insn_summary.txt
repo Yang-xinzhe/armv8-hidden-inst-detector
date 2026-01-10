@@ -1,9 +1,0 @@
-Processing complete.
-Total instructions affecting LD:  3164547
-Total instructions affecting ST:  4186
-Total MemAccess instructions (Union): 3168733
-
-Output files:
-  LD:   memaccess_insn_ld.txt
-  ST:   memaccess_insn_st.txt
-  ALL:  memaccess_insn_all.txt

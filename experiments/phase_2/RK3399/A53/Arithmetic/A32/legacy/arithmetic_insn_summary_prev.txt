@@ -1,9 +1,0 @@
-Processing complete.
-Total instructions affecting GPR:  13184162
-Total instructions affecting CPSR: 1921032
-Total Arithmetic instructions (Union): 15105194
-
-Output files:
-  GPR:  arithmetic_insn_gpr.txt
-  CPSR: arithmetic_insn_cpsr.txt
-  ALL:  arithmetic_insn_all.txt
