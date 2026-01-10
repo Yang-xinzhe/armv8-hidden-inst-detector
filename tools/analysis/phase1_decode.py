@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 import struct
+import argparse
 from pathlib import Path
 import multiprocessing as mp
 import os
+import sys
 
+# Magic: 'HIDR' (Hidden Inst Detector Ranges) -> 0x52444948 (Little Endian)
+HIDR_MAGIC = 0x52444948
+HIDR_VERSION = 1
 
 def bitmap_to_ranges(start, end, bitmap_bytes):
     """
@@ -33,142 +38,136 @@ def bitmap_to_ranges(start, end, bitmap_bytes):
     return ranges
 
 
-def decode_one_file(bin_path: Path, out_dir: Path):
+def decode_one_file(args_tuple):
     """
-    解析单个 bitmap 文件（complete 或 timeout），
-    输出人类可读的区间列表，并返回：
-        (文件名, is_timeout, 指令数量)
+    解析单个 bitmap 文件，输出 .bin 和 .csv
     注意：这个函数会在子进程里跑。
     """
-    is_timeout = "timeout" in bin_path.name
-    out_name = bin_path.stem + "_decoded.txt"
-    out_path = out_dir / out_name
+    bin_path, bin_out_dir, csv_out_dir = args_tuple
+    
+    # 解析文件名中的 file_number (假设格式 resX_*.bin)
+    # 这里的 file_number 最好从文件头读，或者从文件名解
+    stem = bin_path.stem
+    # 提取数字部分，例如 res123_complete -> 123
+    try:
+        # 简单粗暴提取：找到第一个数字序列
+        import re
+        match = re.search(r'res(\d+)_', bin_path.name)
+        if match:
+            file_num_from_name = int(match.group(1))
+        else:
+            # Fallback
+            file_num_from_name = 0 
+    except:
+        file_num_from_name = 0
 
+    is_timeout = "timeout" in bin_path.name
+    # 只处理 complete 文件用于生成 candidate，timeout 文件通常意味着不确定性，
+    # 但如果策略是只要非 crash 就测，那 timeout 也应该包含。
+    # 这里保持原逻辑：解码所有 bin 文件。
+    
+    # 输出文件名规范：candidates_{file_num}.bin / .csv
+    # 如果源文件区分了 complete/timeout，我们也应该区分，或者合并？
+    # 原逻辑是 decode 所有的。
+    # 为了防止文件名冲突，保留原有的 suffix
+    suffix = "_timeout" if is_timeout else "_complete"
+    base_name = f"candidates_{file_num_from_name}{suffix}"
+    
+    bin_out_path = bin_out_dir / (base_name + ".bin")
+    csv_out_path = csv_out_dir / (base_name + ".csv")
+
+    all_ranges = []
+    
+    # 1. 读取并解析 Bitmap
     with bin_path.open("rb") as f:
         header = f.read(8)
         if len(header) != 8:
-            print(f"{bin_path} header too short")
-            return bin_path.name, is_timeout, 0
-
-        # 小端 int32 + int32
+            return 0
+        
+        # Bitmap Header: file_number(4), range_count(4)
         file_number, range_count = struct.unpack("<ii", header)
 
-        all_ranges = []
-
-        for i in range(range_count):
+        for _ in range(range_count):
             header_bytes = f.read(12)
-            if len(header_bytes) != 12:
-                print(f"{bin_path} range {i} header too short "
-                      f"(expected 12 bytes, got {len(header_bytes)})")
-                break
-
+            if len(header_bytes) < 12: break
+            
             start, end, size = struct.unpack("<III", header_bytes)
-
             bitmap = f.read(size)
             if len(bitmap) != size:
-                print(f"{bin_path} range {i} bitmap too short "
-                      f"(expected {size} bytes, got {len(bitmap)})")
-                # Even if bitmap is short, we can try to process what we have
-                # but it's safer to just break or process the partial bitmap.
-                # Here we'll process the partial bitmap to get as much info as possible.
-                ranges = bitmap_to_ranges(start, start + len(bitmap) * 8, bitmap)
-                all_ranges.extend(ranges)
+                # Handle partial read if necessary, or just break
+                if bitmap:
+                    ranges = bitmap_to_ranges(start, start + len(bitmap) * 8, bitmap)
+                    all_ranges.extend(ranges)
                 break
 
             ranges = bitmap_to_ranges(start, end, bitmap)
             all_ranges.extend(ranges)
 
-    # 统计这个文件里一共有多少条指令被置 1
     insn_count = sum(e - s for (s, e) in all_ranges)
+    
+    # 2. 写入二进制格式 (HIDR Format)
+    # Header: Magic(4) + Version(4) + Count(4) + Reserved(4)
+    # Body: [Start(4) + End(4)] * Count
+    if bin_out_dir:
+        with bin_out_path.open("wb") as f:
+            header = struct.pack("<IIII", HIDR_MAGIC, HIDR_VERSION, len(all_ranges), 0)
+            f.write(header)
+            for s, e in all_ranges:
+                f.write(struct.pack("<II", s, e))
 
-    # 写出 txt
-    out_dir.mkdir(parents=True, exist_ok=True)
-    with out_path.open("w", encoding="utf-8") as out:
-        kind = "TIMEOUT" if is_timeout else "EXEC"
-        out.write(
-            f"# file: {bin_path.name}, kind={kind}, "
-            f"file_number={file_number}, ranges={range_count}\n"
-        )
-        out.write("# each line is [start, end) in hex\n\n")
+    # 3. 写入 CSV 格式
+    # Start, End (Hex or Dec? Hex is better for humans)
+    if csv_out_dir:
+        with csv_out_path.open("w", encoding="utf-8") as f:
+            f.write("Start,End\n")
+            for s, e in all_ranges:
+                f.write(f"0x{s:X},0x{e:X}\n")
 
-        for s, e in all_ranges:
-            out.write(f"[0x{s:08X}, 0x{e:08X}]\n")
-
-    # 子进程返回本文件的统计信息
-    return (bin_path.name, is_timeout, insn_count)
-
-
-def _worker(args):
-    """Pool.map 用的简单包装函数（可 picklable）"""
-    bin_path, out_dir = args
-    return decode_one_file(bin_path, out_dir)
+    return insn_count
 
 
 def main():
-    bitmap_dir = Path("experiments/phase_1/bitmap_results")
-    out_dir = Path("experiments/phase_1/decoded_ranges")
+    parser = argparse.ArgumentParser(description="Decode Phase 1 Bitmaps to Binary/CSV Ranges")
+    parser.add_argument("-i", "--input", required=True, type=Path, help="Input directory containing .bin bitmap files")
+    parser.add_argument("--bin-out", type=Path, help="Output directory for binary range files (.bin)")
+    parser.add_argument("--csv-out", type=Path, help="Output directory for CSV range files (.csv)")
+    
+    args = parser.parse_args()
 
-    if len(sys.argv) > 1:
-        bitmap_dir = Path(sys.argv[1])
-    if len(sys.argv) > 2:
-        out_dir = Path(sys.argv[2])
-
-    if not bitmap_dir.is_dir():
-        print(f"bitmap directory not found: {bitmap_dir}")
+    if not args.input.is_dir():
+        print(f"Error: Input directory {args.input} does not exist.")
         return
 
-    bin_files = sorted(bitmap_dir.glob("res*_*.bin"))
+    # Default output dirs if not specified
+    if not args.bin_out and not args.csv_out:
+        print("Error: At least one output directory (--bin-out or --csv-out) must be specified.")
+        return
+
+    if args.bin_out:
+        args.bin_out.mkdir(parents=True, exist_ok=True)
+    if args.csv_out:
+        args.csv_out.mkdir(parents=True, exist_ok=True)
+
+    bin_files = sorted(args.input.glob("res*_*.bin"))
     if not bin_files:
-        print(f"no *.bin files found in {bitmap_dir}")
+        print(f"No .bin files found in {args.input}")
         return
 
-    # 使用所有可用 CPU 核心（你的机器是 22 核，会自动用满）
+    print(f"Processing {len(bin_files)} files from {args.input}...")
+    
+    # Prepare arguments for worker
+    tasks = [(p, args.bin_out, args.csv_out) for p in bin_files]
+
     num_procs = os.cpu_count() or 1
-    print(f"Using {num_procs} processes for decoding...")
-
-    tasks = [(p, out_dir) for p in bin_files]
-
-    # 多进程并行处理每个文件
     with mp.Pool(processes=num_procs) as pool:
-        results = list(pool.map(_worker, tasks))
+        results = list(pool.map(decode_one_file, tasks))
 
-    # 汇总每个文件的指令数量
-    per_file_exec = {}     # res*_complete.bin
-    per_file_timeout = {}  # res*_timeout.bin
-
-    for name, is_timeout, insn_count in results:
-        if is_timeout:
-            per_file_timeout[name] = insn_count
-        else:
-            per_file_exec[name] = insn_count
-
-    total_exec = sum(per_file_exec.values())
-    total_timeout = sum(per_file_timeout.values())
-
-    # 写 summary.txt
-    summary_path = out_dir / "summary.txt"
-    with summary_path.open("w", encoding="utf-8") as f:
-        f.write("# EXEC hidden instructions per file (res*_complete.bin)\n")
-        for name, cnt in sorted(per_file_exec.items()):
-            f.write(f"{name}: {cnt}\n")
-        f.write(f"Total EXEC hidden instructions: {total_exec}\n\n")
-
-        f.write("# TIMEOUT hidden instructions per file (res*_timeout.bin)\n")
-        for name, cnt in sorted(per_file_timeout.items()):
-            f.write(f"{name}: {cnt}\n")
-        f.write(f"Total TIMEOUT hidden instructions: {total_timeout}\n")
-
-    print("\nPer-file EXEC hidden instruction counts:")
-    for name, cnt in sorted(per_file_exec.items()):
-        print(f"  {name}: {cnt}")
-    print(f"Total EXEC hidden instructions: {total_exec}")
-
-    print("\nPer-file TIMEOUT hidden instruction counts:")
-    for name, cnt in sorted(per_file_timeout.items()):
-        print(f"  {name}: {cnt}")
-    print(f"Total TIMEOUT hidden instructions: {total_timeout}")
-
-    print(f"\nSummary written to {summary_path}")
+    total_insns = sum(results)
+    print(f"Done. Total decoded instructions: {total_insns}")
+    if args.bin_out:
+        print(f"Binary ranges saved to: {args.bin_out}")
+    if args.csv_out:
+        print(f"CSV ranges saved to:    {args.csv_out}")
 
 
 if __name__ == "__main__":

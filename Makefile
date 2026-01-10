@@ -4,12 +4,14 @@ ifeq ($(ARCH), aarch64)
 CC				:=	aarch64-linux-gnu-gcc
 CFLAGS			:=	-std=c11 -Wall -Wextra -O0 \
 					-march=armv8-a -fomit-frame-pointer \
-					-Iinc
+					-Iinc \
+					-Isrc/phase2_sandbox/tests/runner
 else
 CC				:=	arm-linux-gnueabihf-gcc
 CFLAGS			:=	-std=c11 -Wall -Wextra -O0 \
 					-marm -march=armv8-a -mfpu=vfpv4 -fomit-frame-pointer -mfloat-abi=hard \
-					-Iinc
+					-Iinc \
+					-Isrc/phase2_sandbox/tests/runner
 endif
 
 # ---------------------------------------------------------------------------
@@ -45,6 +47,7 @@ HARNESS_ROOT    := $(SANDBOX_ROOT)/harness
 TESTS_ROOT      := $(SANDBOX_ROOT)/tests
 DEMOS_ROOT      := $(SANDBOX_ROOT)/demos
 UTILS_ROOT      := $(SANDBOX_ROOT)/utils
+RUNNER_ROOT     := $(TESTS_ROOT)/runner
 
 # Common Sources
 COMMON_SRC		:= src/core/cpu_affinity.c 									\
@@ -53,6 +56,7 @@ COMMON_SRC		:= src/core/cpu_affinity.c 									\
 				   src/core/fs_utils.c
 SANDBOX_SRC 	:= src/core/sandbox.c
 PMU_COUNTER_SRC := src/core/pmu_counter.c
+TEST_RUNNER_SRC := $(RUNNER_ROOT)/test_runner.c
 
 # ---------------------------------------------------------------------------
 # Targets
@@ -102,24 +106,28 @@ DEMO_PMU_SRCS      := $(DEMOS_ROOT)/demo_pmu.c $(SANDBOX_SRC) $(PMU_COUNTER_SRC)
 DEMO_SIMD_SRCS     := $(DEMOS_ROOT)/demo_simd.c $(SANDBOX_SRC) $(COMMON_SRC) $(HARNESS_SIMD_ASM)
 DEMO_CTRL_SRCS     := $(DEMOS_ROOT)/demo_control_flow.c $(SANDBOX_SRC) $(COMMON_SRC) $(HARNESS_CTRL_ASM)
 
-# Tests Sources
+# Tests Sources (Added TEST_RUNNER_SRC)
 TEST_ARITHMETIC_SRCS := $(TESTS_ROOT)/test_arithmetic.c \
+                        $(TEST_RUNNER_SRC) \
                         $(SANDBOX_SRC) \
                         $(HARNESS_REGS_ASM) \
                         $(COMMON_SRC)
 
 TEST_MEMORY_SRCS     := $(TESTS_ROOT)/test_memory.c \
+                        $(TEST_RUNNER_SRC) \
                         $(PMU_COUNTER_SRC) \
                         $(SANDBOX_SRC) \
                         $(COMMON_SRC) \
                         $(HARNESS_PMU_ASM)
 
 TEST_SIMD_SRCS       := $(TESTS_ROOT)/test_simd.c \
+                        $(TEST_RUNNER_SRC) \
                         $(SANDBOX_SRC) \
                         $(COMMON_SRC) \
                         $(HARNESS_SIMD_ASM)
 
 TEST_CTRL_SRCS       := $(TESTS_ROOT)/test_control_flow.c \
+                        $(TEST_RUNNER_SRC) \
                         $(SANDBOX_SRC) \
                         $(COMMON_SRC) \
                         $(HARNESS_CTRL_ASM)
