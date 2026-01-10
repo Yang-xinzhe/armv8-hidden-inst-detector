@@ -16,6 +16,10 @@
 
 static const char *DEFAULT_CONFIG_PATH = "config/project.conf";
 
+#if defined(TEST_T32_16BIT) || defined(TEST_T32_32BIT)
+    extern int g_sandbox_thumb_mode;
+#endif
+
 static void print_usage(const char *prog)
 {
     fprintf(stderr, "Usage: %s [-f <config_path>] [-i <input_dir>] [-o <output_base>] <file_number>\n", prog);
@@ -44,6 +48,10 @@ int run_test_framework(int argc, char *argv[], const TestOps *ops)
         fprintf(stderr, "Error: Invalid TestOps\n");
         return 1;
     }
+
+#if defined(TEST_T32_16BIT) || defined(TEST_T32_32BIT)
+    g_sandbox_thumb_mode = 1;
+#endif
 
     // 1. Argument Parsing
     ProjectConfig cfg;

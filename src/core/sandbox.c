@@ -101,6 +101,7 @@ int init_insn_page(void)
     // for (i = 0; i < boilerplate_length; ++i)
     //     ((uint32_t *)insn_page)[i] = ((uint32_t *)&boilerplate_start)[i];
     memcpy(insn_page, (void*)src_addr, boilerplate_length);
+    __builtin___clear_cache(insn_page, (char*)insn_page + boilerplate_length);
 
     insn_offset = (&insn_location - &boilerplate_start) / 4;
 
@@ -172,7 +173,12 @@ static void exec_std(void *addr, void *ctx) {
 
 static void exec_reg(void *addr, void *ctx) {
     RegisterStates *states = (RegisterStates *)ctx;
-    void (*exec_page)(RegisterStates*) = (void (*)(RegisterStates*))addr;
+    uintptr_t exec_addr = (uintptr_t)addr;
+
+    if (g_sandbox_thumb_mode) {
+        exec_addr |= 1;
+    }
+    void (*exec_page)(RegisterStates*) = (void (*)(RegisterStates*))exec_addr;
     exec_page(states);
 }
 
