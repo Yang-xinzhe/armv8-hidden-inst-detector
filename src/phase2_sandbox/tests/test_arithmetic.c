@@ -111,25 +111,6 @@ static void arith_run_insn(uint32_t insn, void *bitmap_ptr)
     // 3. Compare Results
     const RegisterStates *b = &reg_state_base_slot[0];
     const RegisterStates *a = &reg_state_base_slot[1];
-    size_t count = sizeof(RegisterStates) / sizeof(uint32_t);
-    uint32_t *ptr = (uint32_t *)b;
-    printf("Before:\n");
-    for(size_t i = 0 ; i < count; ++i) {
-        if (i < 13) {
-            printf("r%zu: 0x%08x\n", i, ptr[i]);
-        } else {
-            printf("cpsr: 0x%08x\n", ptr[i]);
-        }
-    }
-    *ptr = (uint32_t *)a;
-    printf("After:\n");
-    for(size_t i = 0 ; i < count; ++i) {
-        if (i < 13) {
-            printf("r%zu: 0x%08x\n", i, ptr[i]);
-        } else {
-            printf("cpsr: 0x%08x\n", ptr[i]);
-        }
-    }
 
     bool gpr_changed =
         (b->r0  != a->r0 ) || (b->r1  != a->r1 ) || (b->r2  != a->r2 ) ||
