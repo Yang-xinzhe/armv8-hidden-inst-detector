@@ -22,6 +22,21 @@ enum rb_plane_id {
     RB_PLANE_MAX
 };
 
+#define HIDR_MAGIC 0x52444948
+#define HIDR_VERSION 1
+
+typedef struct {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t count;
+    uint32_t reserved;
+} RangeFileHeader;
+
+typedef struct {
+    uint32_t start;
+    uint32_t end;   // Exclusive [start, end)
+} RangeEntry;
+
 #define RB_MASK_EXEC    (1u << RB_PLANE_EXEC)
 #define RB_MASK_TIMEOUT (1u << RB_PLANE_TIMEOUT)
 #define RB_MASK_GPR     (1u << RB_PLANE_GPR)
@@ -46,6 +61,7 @@ int  range_bitmap_init_with_mask(RangeBitmap *rb, uint32_t start, uint32_t end, 
 void range_bitmap_mark(RangeBitmap *rb, enum rb_plane_id plane, uint32_t insn);
 int  range_bitmap_plane_has_data(const RangeBitmap *rb, enum rb_plane_id plane);
 int  range_bitmap_flush_planes(const RangeBitmap *rb, uint32_t plane_mask, FILE *files[RB_PLANE_MAX]);
+int  range_bitmap_write_ranges(const RangeBitmap *rb, enum rb_plane_id plane, FILE *file);
 int  range_bitmap_serialize(const RangeBitmap *rb, FILE *file);
 
 /* 辅助 Mark 函数 */

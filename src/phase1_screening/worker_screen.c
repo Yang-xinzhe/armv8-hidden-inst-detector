@@ -189,29 +189,31 @@ static int count_ranges_in_file(FILE *f, uint64_t *total_insns_out)
     return count;
 }
 
-int main(int argc, const char* argv[]) {
-    
-    if(argc < 2) {
-        fprintf(stderr, "Usage: %s <file_number> [output_dir] [input_dir]\n", argv[0]);
-        fprintf(stderr, "Example: %s 1 bitmap_results results_A32\n", argv[0]);
-        return 1;
+int main(int argc, char *argv[]) {
+    // Initialize with invalid values to force specification
+    char *input_dir = NULL;
+    char *output_dir = NULL;
+    int target_file_num = -1;
+
+    // Parse arguments: -i input -o output <file_num>
+    int opt;
+    while ((opt = getopt(argc, argv, "i:o:")) != -1) {
+        switch (opt) {
+            case 'i': input_dir = optarg; break;
+            case 'o': output_dir = optarg; break;
+            default:
+                fprintf(stderr, "Usage: %s -i <input_dir> -o <output_dir> <file_number>\n", argv[0]);
+                return 1;
+        }
     }
 
-    int target_file_num = atoi(argv[1]);
+    if (optind < argc) {
+        target_file_num = atoi(argv[optind]);
+    }
 
-    ProjectConfig cfg;
-    project_config_init(&cfg);
-    (void)project_config_load(&cfg, "config/project.conf");
-
-    const char *output_dir = cfg.phase1_output_dir;
-    const char *input_dir = cfg.phase1_input_dir;
-
-    /* CLI overrides (preferred) */
-    if (argc >= 3 && argv[2] && argv[2][0] != '\0') output_dir = argv[2];
-    if (argc >= 4 && argv[3] && argv[3][0] != '\0') input_dir = argv[3];
-
-    if (!input_dir || input_dir[0] == '\0') {
-        fprintf(stderr, "Error: input_dir is not set. Provide it as argv[3] or via config/project.conf (phase1_input_dir=...)\n");
+    if (target_file_num < 0 || !input_dir || !output_dir) {
+        fprintf(stderr, "Error: Missing required arguments.\n");
+        fprintf(stderr, "Usage: %s -i <input_dir> -o <output_dir> <file_number>\n", argv[0]);
         return 1;
     }
 
@@ -273,7 +275,7 @@ int main(int argc, const char* argv[]) {
 
     char output_filename[256];
     snprintf(output_filename, sizeof(output_filename),
-             "%s/res%d_complete.bin", output_dir, file_number);
+             "%s/candidates_%d_complete.bin", output_dir, file_number);
 
     FILE *output_file = fopen(output_filename, "wb");
     if (!output_file) {
@@ -286,7 +288,7 @@ int main(int argc, const char* argv[]) {
 
     char timeout_filename[256];
     snprintf(timeout_filename, sizeof(timeout_filename),
-             "%s/res%d_timeout.bin", output_dir, file_number);
+             "%s/candidates_%d_timeout.bin", output_dir, file_number);
 
     FILE *timeout_file = fopen(timeout_filename, "wb");
     if (!timeout_file) {
@@ -298,14 +300,18 @@ int main(int argc, const char* argv[]) {
         return 1;
     }
 
-    // complete header：[file_number][range_count]
-    fwrite(&file_number, sizeof(int), 1, output_file);
-    fwrite(&range_count, sizeof(int), 1, output_file);
+    // Initialize HIDR Headers
+    RangeFileHeader header = {
+        .magic = HIDR_MAGIC,
+        .version = HIDR_VERSION,
+        .count = 0,
+        .reserved = 0
+    };
+    fwrite(&header, sizeof(header), 1, output_file);
+    fwrite(&header, sizeof(header), 1, timeout_file);
 
-    // timeout header：[file_number][timeout_range_count]，will be write back
-    int timeout_range_count = 0;
-    fwrite(&file_number, sizeof(int), 1, timeout_file);
-    fwrite(&timeout_range_count, sizeof(int), 1, timeout_file); // write 0 first
+    int total_complete_ranges = 0;
+    int total_timeout_ranges = 0;
 
     char line[256];
     int  current_range_index = 0;
@@ -360,22 +366,31 @@ int main(int argc, const char* argv[]) {
             }
         }
 
-        int flush_ret = range_bitmap_flush(&rb, output_file, timeout_file);
-        if (flush_ret < 0) {
-            fprintf(stderr, "\n[res%d] range_bitmap_flush failed for [%u, %u)\n",
-                    file_number, range_start, range_end);
-            range_bitmap_destroy(&rb);
-            break;
+        int c_cnt = range_bitmap_write_ranges(&rb, RB_PLANE_EXEC, output_file);
+        if (c_cnt < 0) {
+            fprintf(stderr, "Error writing complete ranges\n");
+        } else {
+            total_complete_ranges += c_cnt;
         }
-        if (flush_ret == 1) {
-            timeout_range_count++;
+
+        int t_cnt = range_bitmap_write_ranges(&rb, RB_PLANE_TIMEOUT, timeout_file);
+        if (t_cnt < 0) {
+            fprintf(stderr, "Error writing timeout ranges\n");
+        } else {
+            total_timeout_ranges += t_cnt;
         }
 
         range_bitmap_destroy(&rb);
     }
 
-    fseek(timeout_file, sizeof(int), SEEK_SET);
-    fwrite(&timeout_range_count, sizeof(int), 1, timeout_file);
+    // Rewrite headers with actual counts
+    header.count = total_complete_ranges;
+    fseek(output_file, 0, SEEK_SET);
+    fwrite(&header, sizeof(header), 1, output_file);
+
+    header.count = total_timeout_ranges;
+    fseek(timeout_file, 0, SEEK_SET);
+    fwrite(&header, sizeof(header), 1, timeout_file);
 
     fclose(output_file);
     fclose(timeout_file);

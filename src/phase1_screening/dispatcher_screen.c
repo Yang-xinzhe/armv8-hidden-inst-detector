@@ -66,24 +66,38 @@ int main(int argc, char *argv[]) {
     int num_cores = -1;
     int core_offset = -1;
     char *worker_path = NULL;
-    char *input_dir = NULL;
-    char *output_dir = NULL;
+    
+    // Path Context
+    char *platform = NULL;
+    char *core = NULL;
+    char *isa = NULL;
+    int stage = 0;
+
+    char *cli_input_dir = NULL;
+    char *cli_output_dir = NULL;
     const char *config_path = DEFAULT_CONFIG_PATH;
 
     ProjectConfig cfg;
     project_config_init(&cfg);
 
     int opt;
-    while ((opt = getopt(argc, argv, "c:o:e:d:r:f:")) != -1) {
+    // Updated optstring: -o (old offset) -> -x; -o is free but we use -r for output override in dispatcher convention
+    // But let's stick to consistent CLI for user: 
+    // Dispatcher: -c cores -x offset -e worker -P plat -C core -I isa -S stage [-d input] [-r output]
+    while ((opt = getopt(argc, argv, "c:x:e:P:C:I:S:d:r:f:")) != -1) {
         switch (opt) {
             case 'c': num_cores = atoi(optarg); break;
-            case 'o': core_offset = atoi(optarg); break;
+            case 'x': core_offset = atoi(optarg); break;
             case 'e': worker_path = optarg; break;
-            case 'd': input_dir = optarg; break;
-            case 'r': output_dir = optarg; break;
+            case 'P': platform = optarg; break;
+            case 'C': core = optarg; break;
+            case 'I': isa = optarg; break;
+            case 'S': stage = atoi(optarg); break;
+            case 'd': cli_input_dir = optarg; break;
+            case 'r': cli_output_dir = optarg; break;
             case 'f': config_path = optarg; break;
             default:
-                fprintf(stderr, "Usage: %s -c <num_cores> -o <core_offset> -e <worker_path> [-d <input_dir>] [-r <output_dir>] [-f <config_path>]\n", argv[0]);
+                fprintf(stderr, "Usage: %s -c <cores> -x <offset> -e <worker> [-P <plat> -C <core> -I <isa> -S <stage>] [-d <input>] [-r <output>]\n", argv[0]);
                 return 1;
         }
     }
@@ -91,31 +105,60 @@ int main(int argc, char *argv[]) {
     /* Load config if available (CLI still takes precedence) */
     (void)project_config_load(&cfg, config_path);
 
-    int is_fuzzer = (worker_path && strstr(worker_path, "fuzzer") != NULL);
+    // Path Derivation Logic
+    char derived_input[512] = {0};
+    char derived_output[512] = {0};
 
-    if (input_dir == NULL || input_dir[0] == '\0') {
-        if (is_fuzzer && cfg.phase2_input_dir[0] != '\0') {
-            input_dir = cfg.phase2_input_dir;
-        } else if (!is_fuzzer && cfg.phase1_input_dir[0] != '\0') {
-            input_dir = cfg.phase1_input_dir;
+    // Input Dir Resolution
+    if (cli_input_dir) {
+        strncpy(derived_input, cli_input_dir, sizeof(derived_input)-1);
+    } else if (platform && core && isa && stage > 0) {
+        if (stage == 1) {
+            // Stage 1 Input: Default Seeds
+            snprintf(derived_input, sizeof(derived_input), "experiments/inputs/%s_undef_seeds", isa);
+        } else if (stage == 2) {
+            // Stage 2 Input: Output of Stage 1
+            snprintf(derived_input, sizeof(derived_input), "experiments/targets/%s/%s/%s/01_screening", platform, core, isa);
         }
+    } else {
+         // Fallback to legacy config if available
+         if (stage == 1 && cfg.phase1_input_dir[0] != '\0') strncpy(derived_input, cfg.phase1_input_dir, sizeof(derived_input)-1);
+         else if (stage == 2 && cfg.phase2_input_dir[0] != '\0') strncpy(derived_input, cfg.phase2_input_dir, sizeof(derived_input)-1);
     }
-    if (output_dir == NULL || output_dir[0] == '\0') {
-        if (is_fuzzer && cfg.phase2_output_dir[0] != '\0') {
-            output_dir = cfg.phase2_output_dir;
-        } else if (!is_fuzzer) {
-            output_dir = cfg.phase1_output_dir;
+
+    // Output Dir Resolution
+    if (cli_output_dir) {
+        strncpy(derived_output, cli_output_dir, sizeof(derived_output)-1);
+    } else if (platform && core && isa && stage > 0) {
+        if (stage == 1) {
+             snprintf(derived_output, sizeof(derived_output), "experiments/targets/%s/%s/%s/01_screening", platform, core, isa);
+        } else if (stage == 2) {
+             // Assuming Arithmetic by default for Stage 2, or need finer grain?
+             // For now: 02_fuzzing/arithmetic. User can override with -r if doing memory.
+             snprintf(derived_output, sizeof(derived_output), "experiments/targets/%s/%s/%s/02_fuzzing/arithmetic", platform, core, isa);
         }
+    } else {
+         if (stage == 1 && cfg.phase1_output_dir[0] != '\0') strncpy(derived_output, cfg.phase1_output_dir, sizeof(derived_output)-1);
+         else if (stage == 2 && cfg.phase2_output_dir[0] != '\0') strncpy(derived_output, cfg.phase2_output_dir, sizeof(derived_output)-1);
     }
+
+    char *input_dir = derived_input[0] ? derived_input : NULL;
+    char *output_dir = derived_output[0] ? derived_output : NULL;
 
     // Validation: Ensure all arguments are provided
-    if (num_cores <= 0 || core_offset < 0 || worker_path == NULL || input_dir == NULL || input_dir[0] == '\0') {
-        fprintf(stderr, "Error: Missing required arguments.\n");
-        fprintf(stderr, "Usage: %s -c <num_cores> -o <core_offset> -e <worker_path> [-d <input_dir>] [-r <output_dir>] [-f <config_path>]\n", argv[0]);
-        fprintf(stderr, "Example (A53): %s -c 4 -o 0 -e ./worker -d results_A32 -r bitmap_results_A53\n", argv[0]);
-        fprintf(stderr, "Example (A72): %s -c 2 -o 4 -e ./worker -d results_A32\n", argv[0]);
-        fprintf(stderr, "Example (config): %s -c 4 -o 0 -e ./worker -f %s\n", argv[0], DEFAULT_CONFIG_PATH);
+    if (num_cores <= 0 || core_offset < 0 || worker_path == NULL || input_dir == NULL) {
+        fprintf(stderr, "Error: Missing required arguments or unable to derive paths.\n");
+        fprintf(stderr, "Usage: %s -c <cores> -x <offset> -e <worker> -P <plat> -C <core> -I <isa> -S <stage>\n", argv[0]);
+        fprintf(stderr, "Derived Input: %s\n", input_dir ? input_dir : "(null)");
+        fprintf(stderr, "Derived Output: %s\n", output_dir ? output_dir : "(null)");
         return 1;
+    }
+    
+    // Auto-create output directory
+    if (output_dir) {
+        char mkdir_cmd[1024];
+        snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s", output_dir);
+        system(mkdir_cmd);
     }
 
     if(access(worker_path, X_OK) != 0) {
@@ -143,11 +186,22 @@ int main(int argc, char *argv[]) {
     while(files_processed < max_files || current_file < max_files) {
         for(int w = 0; w < num_cores; w++) {
             if(!workers[w].busy && current_file < max_files) {
-                char input_filename[100];
-                snprintf(input_filename, sizeof(input_filename), "%s/res%d.txt", input_dir, current_file);
+                char input_filename[512];
+                // For Stage 1 (Screening), input is res%d.txt
+                // For Stage 2 (Fuzzing), input is candidates_%d_complete.bin
+                // But we check existence to be safe.
+                // The worker expects specific filenames, dispatcher just checks existence.
+                
+                // Heuristic: Check both possible names or just trust worker?
+                // Dispatcher check is useful to skip missing files fast.
+                if (stage == 1) {
+                    snprintf(input_filename, sizeof(input_filename), "%s/res%d.txt", input_dir, current_file);
+                } else {
+                    snprintf(input_filename, sizeof(input_filename), "%s/candidates_%d_complete.bin", input_dir, current_file);
+                }
                 
                 if(access(input_filename, R_OK) != 0) {
-                    snprintf(workers[w].last_msg, 64, "\033[33mSkip (missing input): %d\033[0m", current_file);
+                    snprintf(workers[w].last_msg, 64, "\033[33mSkip (missing): %d\033[0m", current_file);
                     current_file++;
                     continue;
                 }
@@ -165,30 +219,26 @@ int main(int argc, char *argv[]) {
                     char file_num_str[20];
                     snprintf(file_num_str, sizeof(file_num_str), "%d", current_file);
 
-                    int is_fuzzer = (strstr(worker_path, "fuzzer") != NULL);
-
-                    if (is_fuzzer) {
-                        char *fuzzer_argv[8];
-                        int arg_idx = 0;
-                        fuzzer_argv[arg_idx++] = worker_path;
-                        
-                        if (input_dir && input_dir[0] != '\0') {
-                            fuzzer_argv[arg_idx++] = "-i";
-                            fuzzer_argv[arg_idx++] = (char*)input_dir;
-                        }
-
-                        if (output_dir && output_dir[0] != '\0') {
-                            fuzzer_argv[arg_idx++] = "-o";
-                            fuzzer_argv[arg_idx++] = (char*)output_dir;
-                        }
-                        
-                        fuzzer_argv[arg_idx++] = file_num_str;
-                        fuzzer_argv[arg_idx] = NULL;
-                        
-                        execv(worker_path, fuzzer_argv);
-                    } else {
-                        execl(worker_path, worker_path, file_num_str, output_dir, input_dir, NULL);
+                    // Unified Worker Invocation: worker -i <in> -o <out> <file_num>
+                    char *worker_argv[10];
+                    int arg_idx = 0;
+                    worker_argv[arg_idx++] = worker_path;
+                    
+                    if (input_dir) {
+                        worker_argv[arg_idx++] = "-i";
+                        worker_argv[arg_idx++] = input_dir;
                     }
+
+                    if (output_dir) {
+                        worker_argv[arg_idx++] = "-o";
+                        worker_argv[arg_idx++] = output_dir;
+                    }
+                    
+                    worker_argv[arg_idx++] = file_num_str;
+                    worker_argv[arg_idx] = NULL;
+                    
+                    execv(worker_path, worker_argv);
+
                     perror("Worker exec failed");
                     _exit(1);
                 } else {
@@ -201,6 +251,7 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
+
 
         for(int w = 0; w < num_cores; w++) {
             if(workers[w].busy) {

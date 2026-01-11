@@ -211,6 +211,53 @@ int range_bitmap_serialize(const RangeBitmap *rb, FILE *file)
     return 0;
 }
 
+int range_bitmap_write_ranges(const RangeBitmap *rb, enum rb_plane_id plane, FILE *file)
+{
+    if (!rb || !file) return -1;
+    if (plane >= RB_PLANE_MAX || !(rb->plane_mask & (1u << plane))) return 0;
+    
+    uint8_t *bitmap = rb->planes[plane];
+    // If bitmap is NULL but mask is set, treat as empty (0 ranges)
+    if (!bitmap) return 0;
+
+    uint32_t bits = rb->bits;
+    uint32_t start_insn = rb->start;
+    int range_count = 0;
+    
+    int in_range = 0;
+    uint32_t current_start = 0;
+    
+    for (uint32_t i = 0; i < bits; ++i) {
+        int is_set = (bitmap[i / 8] >> (i % 8)) & 1;
+        
+        if (is_set) {
+            if (!in_range) {
+                in_range = 1;
+                current_start = start_insn + i;
+            }
+        } else {
+            if (in_range) {
+                // Range End (Exclusive)
+                uint32_t current_end = start_insn + i;
+                if (fwrite(&current_start, sizeof(uint32_t), 1, file) != 1) return -1;
+                if (fwrite(&current_end, sizeof(uint32_t), 1, file) != 1) return -1;
+                range_count++;
+                in_range = 0;
+            }
+        }
+    }
+    
+    // Handle last range
+    if (in_range) {
+        uint32_t current_end = start_insn + bits;
+        if (fwrite(&current_start, sizeof(uint32_t), 1, file) != 1) return -1;
+        if (fwrite(&current_end, sizeof(uint32_t), 1, file) != 1) return -1;
+        range_count++;
+    }
+
+    return range_count;
+}
+
 void range_bitmap_destroy(RangeBitmap *rb)
 {
     if (!rb) return;

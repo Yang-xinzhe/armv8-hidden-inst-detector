@@ -5,24 +5,7 @@
 #include <stdio.h>
 #include "core.h"
 #include "sandbox.h"
-
-// ------------------------------------------------------------------
-// Binary File Format (Must match tools/analysis/phase1_decode.py)
-// ------------------------------------------------------------------
-#define HIDR_MAGIC 0x52444948 // 'HIDR'
-#define HIDR_VERSION 1
-
-typedef struct {
-    uint32_t magic;
-    uint32_t version;
-    uint32_t count;
-    uint32_t reserved;
-} RangeFileHeader;
-
-typedef struct {
-    uint32_t start;
-    uint32_t end;   // Exclusive [start, end)
-} RangeEntry;
+#include "bitmap.h"
 
 // ------------------------------------------------------------------
 // Test Operations Interface

@@ -84,6 +84,7 @@ TEST_ARITHMETIC 	:=	$(BUILD_DIR)/test_arithmetic$(BIN_SUFFIX)
 TEST_MEMORY		    :=	$(BUILD_DIR)/test_memory$(BIN_SUFFIX)
 TEST_SIMD			:=	$(BUILD_DIR)/test_simd$(BIN_SUFFIX)
 TEST_CONTROL_FLOW 	:= 	$(BUILD_DIR)/test_control_flow$(BIN_SUFFIX)
+TEST_CANARY       	:= 	$(BUILD_DIR)/test_canary$(BIN_SUFFIX)
 
 # ---------------------------------------------------------------------------
 # Source Lists (Dynamic based on ASM_SUFFIX)
@@ -103,6 +104,7 @@ HARNESS_REGS_ASM   := $(HARNESS_ROOT)/regs/entry_$(ASM_SUFFIX).S
 HARNESS_PMU_ASM    := $(HARNESS_ROOT)/pmu/entry_$(ASM_SUFFIX).S
 HARNESS_SIMD_ASM   := $(HARNESS_ROOT)/simd/entry_$(ASM_SUFFIX).S
 HARNESS_CTRL_ASM   := $(HARNESS_ROOT)/control_flow/entry_$(ASM_SUFFIX).S
+HARNESS_CANARY_ASM := $(HARNESS_ROOT)/canary/entry_$(ASM_SUFFIX).S
 
 # Demos Sources
 DEMO_REGS_SRCS     := $(DEMOS_ROOT)/demo_regs.c $(SANDBOX_SRC) $(HARNESS_REGS_ASM)
@@ -136,6 +138,12 @@ TEST_CTRL_SRCS       := $(TESTS_ROOT)/test_control_flow.c \
                         $(COMMON_SRC) \
                         $(HARNESS_CTRL_ASM)
 
+TEST_CANARY_SRCS     := $(TESTS_ROOT)/test_canary.c \
+                        $(TEST_RUNNER_SRC) \
+                        $(SANDBOX_SRC) \
+                        $(COMMON_SRC) \
+                        $(HARNESS_CANARY_ASM)
+
 # ---------------------------------------------------------------------------
 # Build Rules
 # ---------------------------------------------------------------------------
@@ -146,7 +154,7 @@ TEST			?= 0xe1a00001
 
 all:	$(DISPATCHER) $(WORKER)  \
 		$(DEMO_REGS) $(DEMO_PMU) $(DEMO_SIMD) $(DEMO_CTRL_FLOW) \
-		$(TEST_ARITHMETIC) $(TEST_MEMORY) $(TEST_SIMD) $(TEST_CONTROL_FLOW) $(INLINE_ASM_VALIDATOR)
+		$(TEST_ARITHMETIC) $(TEST_MEMORY) $(TEST_SIMD) $(TEST_CONTROL_FLOW) $(TEST_CANARY) $(INLINE_ASM_VALIDATOR)
 
 $(BUILD_DIR):
 	mkdir -p $@
@@ -192,6 +200,9 @@ $(TEST_SIMD): $(TEST_SIMD_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 $(TEST_CONTROL_FLOW): $(TEST_CTRL_SRCS) | $(BUILD_DIR)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
+
+$(TEST_CANARY): $(TEST_CANARY_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 clean:
