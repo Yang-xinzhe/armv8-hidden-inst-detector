@@ -9,7 +9,7 @@ CFLAGS			:=	-std=c11 -Wall -Wextra -O0 \
 else
 CC				:=	arm-linux-gnueabihf-gcc
 CFLAGS			:=	-std=c11 -Wall -Wextra -O0 \
-					-marm -march=armv8-a -mfpu=vfpv4 -fomit-frame-pointer -mfloat-abi=hard \
+					-march=armv8-a -mfpu=vfpv4 -fomit-frame-pointer -mfloat-abi=hard \
 					-Iinc \
 					-Isrc/phase2_sandbox/tests/runner
 endif
@@ -20,17 +20,21 @@ endif
 MODE ?= a32
 ASM_SUFFIX := a32
 BIN_SUFFIX := _a32
+ARCH_FLAG  := -marm
 
 ifeq ($(MODE), t32_16)
     CFLAGS += -DTEST_T32_16BIT
     ASM_SUFFIX := t32_16
     BIN_SUFFIX := _t32_16
+	ARCH_FLAG  := -mthumb
 else ifeq ($(MODE), t32_32)
     CFLAGS += -DTEST_T32_32BIT
     ASM_SUFFIX := t32_32
     BIN_SUFFIX := _t32_32
+	ARCH_FLAG  := -mthumb
 endif
 
+CFLAGS += $(ARCH_FLAG)
 # ---------------------------------------------------------------------------
 # Directories & Paths
 # ---------------------------------------------------------------------------
@@ -140,9 +144,9 @@ TEST			?= 0xe1a00001
 
 .PHONY: all clean $(INLINE_ASM_VALIDATOR)
 
-all:	$(DISPATCHER) $(WORKER) $(INLINE_ASM_VALIDATOR) \
+all:	$(DISPATCHER) $(WORKER)  \
 		$(DEMO_REGS) $(DEMO_PMU) $(DEMO_SIMD) $(DEMO_CTRL_FLOW) \
-		$(TEST_ARITHMETIC) $(TEST_MEMORY) $(TEST_SIMD) $(TEST_CONTROL_FLOW)
+		$(TEST_ARITHMETIC) $(TEST_MEMORY) $(TEST_SIMD) $(TEST_CONTROL_FLOW) $(INLINE_ASM_VALIDATOR)
 
 $(BUILD_DIR):
 	mkdir -p $@
