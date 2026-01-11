@@ -1,0 +1,1194 @@
+A32 instruction set encoding :
+-Data-processing and miscellaneous instructions :
+--Extra load/store :
+---load/Store Dual, Half, Signed Byte (register) :
+----STRH (register) - Post-indexed variant
+----LDRD (register) - Post-indexed variant
+----STRD (register) - Post-indexed variant
+----LDRH (register) - Post-indexed variant
+----LDRSB (register) - Post-indexed variant
+----LDRSH (register) - Post-indexed variant
+----STRHT
+----Unallocated
+----Unallocated
+----LDRHT
+----LDRSBT
+----LDRSHT
+----STRH (register) - Pre-indexed variant
+----LDRD (register) - Pre-indexed variant
+----STRD (register) - Pre-indexed variant
+----LDRH (register) - Pre-indexed variant
+----LDRSB (register) - Pre-indexed variant
+----LDRSH (register) - Pre-indexed variant
+---load/Store Dual, Half, Signed Byte (immediate, literal) :
+----LDRD (literal)
+----LDRH (literal)
+----LDRSB (literal)
+----LDRSH (literal)
+----LDRD (immediate) - Post-indexed variant
+----STRH (immediate) - Post-indexed variant
+----STRD (immediate) - Post-indexed variant
+----LDRH (immediate) - Post-indexed variant
+----LDRSB (immediate) - Post-indexed variant
+----LDRSH (immediate) - Post-indexed variant
+----Unallocated
+----STRHT
+----Unallocated
+----LDRHT
+----LDRSBT
+----LDRSHT
+----LDRD (immediate) - Offset variant
+----STRH (immediate) - Offset variant
+----STRD (immediate) - Offset variant
+----LDRH (immediate) - Offset variant
+----LDRSB (immediate) - Offset variant
+----LDRSH (immediate) - Offset variant
+----LDRD (immediate) - Pre-indexed variant
+----STRH (immediate) - Pre-indexed variant
+----STRD (immediate) - Pre-indexed variant
+----LDRH (immediate) - Pre-indexed variant
+----LDRSB (immediate) - Pre-indexed variant
+----LDRSH (immediate) - Pre-indexed variant
+--Multiply and Accumulate :
+---MUL,MULS
+---MLA,MLAS
+---UMAAL
+---Unallocated
+---MLS
+---Unallocated
+---UMULL,UMULLS
+---UMLAL,UMLALS
+---SMULL,SMULLS
+---SMLAL,SMLALS
+--Synchronization primitives and Load-Acquire/Store-Release :
+---Unallocated
+---Load/Store Exclusive and Load-Acquire/Store-Release :
+----STL
+----Unallocated
+----STLEX
+----STREX
+----LDA
+----Unallocated
+----LDAEX
+----LDREX
+----Unallocated
+----STLEXD
+----STREXD
+----Unallocated
+----LDAEXD
+----LDREXD
+----STLB
+----Unallocated
+----STLEXB
+----STREXB
+----LDAB
+----Unallocated
+----LDAEXB
+----LDREXB
+----STLH
+----Unallocated
+----STLEXH
+----STREXH
+----LDAH
+----Unallocated
+----LDAEXH
+----LDREXH
+--Miscellaneous :
+---Unallocated
+---Unallocated
+---Unallocated
+---Unallocated
+---BX
+---BXJ
+---BLX (register)
+---Unallocated
+---Unallocated
+---Unallocated
+---Unallocated
+---Unallocated
+---CLZ
+---Unallocated
+---Unallocated
+---ERET
+---Exception Generation :
+----HLT
+----BKPT
+----HVC
+----SMC
+---Move special register (register) :
+----MRS
+----MRS (Banked register)
+----MSR (register)
+----MSR (Banked register)
+---Cyclic Redundancy Check :
+----CRC32 - CRC32B variant
+----CRC32C - CRC32CB variant
+----CRC32 - CRC32H variant
+----CRC32C - CRC32CH variant
+----CRC32 - CRC32W variant
+----CRC32C - CRC32CW variant
+----CONSTRAINED UNPREDICTABLE
+---Integer Saturating Arithmetic :
+----QADD
+----QSUB
+----QDADD
+----QDSUB
+--Halfword Multiply and Accumulate :
+---SMLABB, SMLABT, SMLATB, SMLATT
+---SMLAWB, SMLAWT- SMLAWB variant
+---SMULWB, SMULWT- SMULWB variant
+---SMLAWB, SMLAWT- SMLAWT variant
+---SMULWB, SMULWT- SMULWT variant
+---SMLALBB, SMLALBT, SMLALTB, SMLALTT
+---SMULBB, SMULBT, SMULTB, SMULTT
+--Data-processing register (immediate shift) :
+---Integer Data Processing (three register, immediate shift) :
+----AND, ANDS (register) - ANDS, shift or rotate by value variant
+----AND, ANDS (register) - ANDS, rotate right with extend variant
+----EOR, EORS (register) - EORS, shift or rotate by value variant
+----EOR, EORS (register) - EORS, rotate right with extend variant
+----SUB, SUBS (register) - SUB, shift or rotate by value variant
+----SUB, SUBS (register) - SUB, rotate right with extend variant
+----SUB, SUBS (SP minus register) - SUB, shift or rotate by value variant
+----SUB, SUBS (SP minus register) - SUB, rotate right with extend variant
+----SUB, SUBS (register) - SUBS, shift or rotate by value variant
+----SUB, SUBS (register) - SUBS, rotate right with extend variant
+----SUB, SUBS (SP minus register) - SUBS, shift or rotate by value variant
+----SUB, SUBS (SP minus register) - SUBS, rotate right with extend variant
+----RSB, RSBS (register) - RSBS, shift or rotate by value variant
+----RSB, RSBS (register) - RSBS, rotate right with extend variant
+----ADD, ADDS (register) - ADD, shift or rotate by value variant
+----ADD, ADDS (register) - ADD, rotate right with extend variant
+----ADD, ADDS (SP plus register) - ADD, shift or rotate by value variant
+----ADD, ADDS (SP plus register) - ADD, rotate right with extend variant
+----ADD, ADDS (register) - ADDS, shift or rotate by value variant
+----ADD, ADDS (register) - ADDS, rotate right with extend variant
+----ADD, ADDS (SP plus register) - ADDS, shift or rotate by value variant
+----ADD, ADDS (SP plus register) - ADDS, rotate right with extend variant
+----ADC, ADCS (register) - ADCS, shift or rotate by value variant
+----ADC, ADCS (register) - ADCS, rotate right with extend variant
+----SBC, SBCS (register) - SBCS, shift or rotate by value variant
+----SBC, SBCS (register) - SBCS, rotate right with extend variant
+----RSC, RSCS (register) - RSCS, shift or rotate by value variant
+----RSC, RSCS (register) - RSCS, rotate right with extend variant
+---Integer Test and Compare (two register, immediate shift) :
+----TST (register) - Shift or rotate by value variant
+----TST (register) - Rotate right with extend variant
+----TEQ (register) - Shift or rotate by value variant
+----TEQ (register) - Rotate right with extend variant
+----CMP (register) - Shift or rotate by value variant
+----CMP (register) - Rotate right with extend variant
+----CMN (register) - Shift or rotate by value variant
+----CMN (register) - Rotate right with extend variant
+---Logical Arithmetic (three register, immediate shift) :
+----ORR, ORRS (register) - ORRS, shift or rotate by value variant
+----ORR, ORRS (register) - ORRS, rotate right with extend variant
+----MOV, MOVS (register) - MOVS, shift or rotate by value variant
+----MOV, MOVS (register) - MOVS, rotate right with extend variant
+----BIC, BICS (register) - BICS, shift or rotate by value variant
+----BIC, BICS (register) - BICS, rotate right with extend variant
+----MVN, MVNS (register) - MVNS, shift or rotate by value variant
+----MVN, MVNS (register) - MVNS, rotate right with extend variant
+--Data-processing register (register shift) :
+---Integer Data Processing (three register, register shift) :
+----AND, ANDS (register-shifted register)
+----EOR, EORS (register-shifted register)
+----SUB, SUBS (register-shifted register)
+----RSB, RSBS (register-shifted register)
+----ADD, ADDS (register-shifted register)
+----ADC, ADCS (register-shifted register)
+----SBC, SBCS (register-shifted register)
+----RSC, RSCS (register-shifted register)
+---Integer Test and Compare (two register, register shift) :
+----TST (register-shifted register)
+----TEQ (register-shifted register)
+----CMP (register-shifted register)
+----CMN (register-shifted register)
+---Logical Arithmetic (three register, register shift) :
+----ORR, ORRS (register-shifted register)
+----MOV, MOVS (register-shifted register)
+----BIC, BICS (register-shifted register)
+----MVN, MVNS (register-shifted register)
+--Data-processing immediate :
+---Integer Data Processing (two register and immediate) :
+----AND, ANDS (immediate)
+----EOR, EORS (immediate)
+----SUB, SUBS (immediate) - SUB variant
+----SUB, SUBS (SP minus immediate) - SUB variant
+----ADR - A2
+----SUB, SUBS (immediate) - SUBS variant
+----SUB, SUBS (SP minus immediate) - SUBS variant
+----RSB, RSBS (immediate)
+----ADD, ADDS (immediate) - ADD variant
+----ADD, ADDS (SP plus immediate) - ADD variant
+----ADR - A1
+----ADD, ADDS (immediate) - ADDS variant
+----ADD, ADDS (SP plus immediate) - ADDS variant
+----ADC, ADCS (immediate)
+----SBC, SBCS (immediate)
+----RSC, RSCS (immediate)
+---Move Halfword (immediate) :
+----MOV, MOVS (immediate)
+----MOVT
+---Move Special Register and Hints (immediate) :
+----MSR (immediate)
+----NOP
+----YIELD
+----WFE
+----WFI
+----SEV
+----SEVL
+----Reserved hint, behaves as NOP
+----Reserved hint, behaves as NOP
+----ESB
+----Reserved hint, behaves as NOP
+----TSB CSYNC 
+----Reserved hint, behaves as NOP
+----CSDB
+----Reserved hint, behaves as NOP
+----Reserved hint, behaves as NOP
+----Reserved hint, behaves as NOP
+----Reserved hint, behaves as NOP
+----Reserved hint, behaves as NOP
+----Reserved hint, behaves as NOP
+----Reserved hint, behaves as NOP
+----Reserved hint, behaves as NOP
+----DBG
+---Integer Test and Compare (one register and immediate) :
+----TST (immediate)
+----TEQ (immediate)
+----CMP (immediate)
+----CMN (immediate)
+---Logical Arithmetic (two register and immediate) :
+----ORR, ORRS (immediate)
+----MOV, MOVS (immediate)
+----BIC, BICS (immediate)
+----MVN, MVNS (immediate)
+----
+--
+-Load/Store Word,Unsigned Byte(immediate,literal) :
+--LDR (literal)
+--LDRB (literal)
+--STR (immediate) - Post-indexed variant
+--LDR (immediate) - Post-indexed variant
+--STRB (immediate) - Post-indexed variant
+--LDRB (immediate) - Post-indexed variant
+--STRT
+--LDRT
+--STRBT
+--LDRBT
+--STR (immediate) - Offset variant
+--LDR (immediate) - Offset variant
+--STRB (immediate) - Offset variant
+--LDRB (immediate) - Offset variant
+--STR (immediate) - Pre-indexed variant
+--LDR (immediate) - Pre-indexed variant
+--STRB (immediate) - Pre-indexed variant
+--LDRB (immediate) - Pre-indexed variant
+-Load/Store Word,Unsigned Byte(register) :
+--STR (register) - Post-indexed variant
+--LDR (register) - Post-indexed variant
+--STRT
+--LDRT
+--STRB (register) - Post-indexed variant
+--LDRB (register) - Post-indexed variant
+--STRBT
+--LDRBT
+--STR (register) - Pre-indexed variant
+--LDR (register) - Pre-indexed variant
+--STRB (register) - Pre-indexed variant
+--LDRB (register) - Pre-indexed variant
+-Media instructions :
+--Parallel Arithmetic :
+---Unallocated
+---SADD16
+---SASX
+---SSAX
+---SSUB16
+---SADD8
+---Unallocated
+---Unallocated
+---SSUB8
+---QADD16
+---QASX
+---QSAX
+---QSUB16
+---QADD8
+---Unallocated
+---Unallocated
+---QSUB8
+---SHADD16
+---SHASX
+---SHSAX
+---SHSUB16
+---SHADD8
+---Unallocated
+---Unallocated
+---SHSUB8
+---Unallocated
+---UADD16
+---UASX
+---USAX
+---USUB16
+---UADD8
+---Unallocated
+---Unallocated
+---USUB8
+---UQADD16
+---UQASX
+---UQSAX
+---UQSUB16
+---UQADD8
+---Unallocated
+---Unallocated
+---UQSUB8
+---UHADD16
+---UHASX
+---UHSAX
+---UHSUB16
+---UHADD8
+---Unallocated
+---Unallocated
+---UHSUB8
+--SEL
+--Unallocated
+--PKHBT, PKHTB
+--Unallocated
+--Unallocated
+--Unallocated
+--Unallocated
+--Saturate 16-bit :
+---SSAT16
+---USAT16
+--Unallocated
+--Reverse Bit/Byte :
+---REV
+---REV16
+---RBIT
+---REVSH
+--Saturate 32-bit :
+---SSAT
+---USAT
+--Unallocated
+--Extend and Add :
+---SXTAB16
+---SXTB16
+---SXTAB
+---SXTB
+---SXTAH
+---SXTH
+---UXTAB16
+---UXTB16
+---UXTAB
+---UXTB
+---UXTAH
+---UXTH
+--Signed multiply, Divide :
+---SMLAD, SMLADX - SMLAD variant
+---SMLAD, SMLADX - SMLADX variant
+---SMLSD, SMLSDX - SMLSD variant
+---SMLSD, SMLSDX - SMLSDX variant
+---Unallocated
+---SMUAD, SMUADX - SMUAD variant
+---SMUAD, SMUADX - SMUADX variant
+---SMUSD, SMUSDX - SMUSD variant
+---SMUSD, SMUSDX - SMUSDX variant
+---SDIV
+---Unallocated
+---Unallocated
+---UDIV
+---Unallocated
+---SMLALD, SMLALDX - SMLALD variant
+---SMLALD, SMLALDX - SMLALDX variant
+---SMLSLD, SMLSLDX - SMLSLD variant
+---SMLSLD, SMLSLDX - SMLSLDX variant
+---Unallocated
+---SMMLA, SMMLAR - SMMLA variant
+---SMMLA, SMMLAR - SMMLAR variant
+---Unallocated
+---Unallocated
+---SMMLS, SMMLSR - SMMLS variant
+---SMMLS, SMMLSR - SMMLSR variant
+---SMMUL, SMMULR - SMMUL variant
+---SMMUL, SMMULR - SMMULR variant
+---Unallocated
+--Unsigned Sum of Absolute Differences :
+---USADA8
+---USAD8
+--Unallocated
+--Unallocated
+--Unallocated
+--Unallocated
+--Unallocated
+--Bitfield Insert :
+---BFI
+---BFC
+--Unallocated
+--Permanently UNDEFINED :
+---Unallocated
+---Unallocated
+---Unallocated
+---UDF
+--Unallocated
+--Unallocated
+--Bitfield Extract :
+---SBFX
+---UBFX
+--Unallocated
+--Unallocated
+-Branch,branch with link,and block data transfer :
+--Exception Save/Restore :
+---Unallocated
+---RFE, RFEDA, RFEDB, RFEIA, RFEIB - Decrement After variant
+---SRS, SRSDA, SRSDB, SRSIA, SRSIB - Decrement After variant
+---RFE, RFEDA, RFEDB, RFEIA, RFEIB - Increment After variant
+---SRS, SRSDA, SRSDB, SRSIA, SRSIB - Increment After variant
+---RFE, RFEDA, RFEDB, RFEIA, RFEIB - Decrement Before variant
+---SRS, SRSDA, SRSDB, SRSIA, SRSIB - Decrement Before variant
+---Unallocated
+---RFE, RFEDA, RFEDB, RFEIA, RFEIB - Increment Before variant
+---SRS, SRSDA, SRSDB, SRSIA, SRSIB - Increment Before variant
+--Load/Store Multiple :
+---STMDA,STMED
+---LDMDA,LDMFA
+---STM,STMIA,STMEA
+---LDM,LDMIA,LDMFD
+---STM (User registers)
+---STMDB,STMFD
+---LDMDB,LDMEA
+---LDM (User registers)
+---STMIB,STMFA
+---LDMIB,LDMED
+---LDM (exception return)
+--Branch (immediate) :
+---B
+---BL,BLX (immediate) - A1
+---BL,BLX (immediate) - A2
+--
+-System register access,Advanced SIMD,floating-point,and Supervisor call :
+--Unallocated
+--Unallocated
+--Supervisor call :
+---Unallocated
+---SVC
+--Unconditional Advanced SIMD and floating-point instructions :
+---Advanced SIMD three registers of the same length extension :
+----VCADD - 64-bit SIMD vector variant
+----Unallocated
+----VCADD - 128-bit SIMD vector variant
+----Unallocated
+----Unallocated
+----Unallocated
+----Unallocated
+----Unallocated
+----VMMLA
+----Unallocated
+----VDOT (vector) - 64-bit SIMD vector variant
+----Unallocated
+----VDOT (vector) - 128-bit SIMD vector variant
+----Unallocated
+----Unallocated
+----Unallocated
+----VFMAL (vector)
+----Unallocated
+----Unallocated
+----VSMMLA
+----VUMMLA
+----VSDOT (vector) - 64-bit SIMD vector variant
+----VUDOT (vector) - 64-bit SIMD vector variant
+----VSDOT (vector) - 128-bit SIMD vector variant
+----VUDOT (vector) - 128-bit SIMD vector variant
+----VFMAB, VFMAT (BFloat16, vector)
+----Unallocated
+----Unallocated
+----Unallocated
+----VFMSL (vector)
+----Unallocated
+----Unallocated
+----VUSMMLA
+----Unallocated
+----VUSDOT (vector) - 64-bit SIMD vector variant
+----Unallocated
+----VUSDOT (vector) - 128-bit SIMD vector variant
+----Unallocated
+----Unallocated
+----Unallocated
+----VCMLA
+----Unallocated
+----Unallocated
+----Unallocated
+----Unallocated
+----Unallocated
+----Unallocated
+---Floating-point conditional select :
+----VSELEQ, VSELGE, VSELGT, VSELVS - VSELGT,halfprec variant
+----VSELEQ, VSELGE, VSELGT, VSELVS - VSELGT,singleprec variant
+----VSELEQ, VSELGE, VSELGT, VSELVS - VSELGT,doubleprec variant
+---Floating-point minNum/maxNum :
+----VMAXNM - Half-precision scalar variant
+----VMINNM - Half-precision scalar variant
+----VMAXNM - Single-precision scalar variant
+----VMINNM - Single-precision scalar variant
+----VMAXNM - Double-precision scalar variant
+----VMINNM - Double-precision scalar variant
+---Floating-point extraction and insertion :
+----Unallocated
+----VMOVX
+----VINS
+----Unallocated
+---Floating-point directed convert to integer :
+----Unallocated
+----VRINTA (floating-point) - Half-precision scalar variant
+----VRINTA (floating-point) - Single-precision scalar variant
+----VRINTA (floating-point) - Double-precision scalar variant
+----VRINTN (floating-point) - Half-precision scalar variant
+----VRINTN (floating-point) - Single-precision scalar variant
+----VRINTN (floating-point) - Double-precision scalar variant
+----VRINTP (floating-point) - Half-precision scalar variant
+----VRINTP (floating-point) - Single-precision scalar variant
+----VRINTP (floating-point) - Double-precision scalar variant
+----VRINTM (floating-point) - Half-precision scalar variant
+----VRINTM (floating-point) - Single-precision scalar variant
+----VRINTM (floating-point) - Double-precision scalar variant
+----VCVTA (floating-point) - Half-precision scalar variant
+----VCVTA (floating-point) - Single-precision scalar variant
+----VCVTA (floating-point) - Double-precision scalar variant
+----VCVTN (floating-point) - Half-precision scalar variant
+----VCVTN (floating-point) - Single-precision scalar variant
+----VCVTN (floating-point) - Double-precision scalar variant
+----VCVTP (floating-point) - Half-precision scalar variant
+----VCVTP (floating-point) - Single-precision scalar variant
+----VCVTP (floating-point) - Double-precision scalar variant
+----VCVTM (floating-point) - Half-precision scalar variant
+----VCVTM (floating-point) - Single-precision scalar variant
+----VCVTM (floating-point) - Double-precision scalar variant
+---Advanced SIMD and floating-point multiply with accumulate :
+----VCMLA (by element) - 128-bit SIMD vector of half-precision Floating-point variant
+----VFMAL (by scalar)
+----VFMSL (by scalar)
+----Unallocated
+----VFMAB, VFMAT (BFloat16, by scalar)
+----VCMLA (by element) - 64-bit SIMD vector of single-precision Floating-point variant
+----Unallocated
+----VCMLA (by element) - 128-bit SIMD vector of single-precision Floating-point variant
+---Advanced SIMD and floating-point dot product :
+----Unallocated
+----VDOT (by element) - 64-bit SIMD vector variant
+----Unallocated
+----VDOT (by element) - 128-bit SIMD vector variant
+----Unallocated
+----Unallocated
+----VSDOT (by element) - 64-bit SIMD vector variant
+----VUDOT (by element) - 64-bit SIMD vector variant
+----VSDOT (by element) - 128-bit SIMD vector variant
+----VUDOT (by element) - 128-bit SIMD vector variant
+----Unallocated
+----Unallocated
+----VUSDOT (by element) - 64-bit SIMD vector variant
+----VSUDOT (by element) - 64-bit SIMD vector variant
+----VUSDOT (by element) - 128-bit SIMD vector variant
+----VSUDOT (by element) - 128-bit SIMD vector variant
+----Unallocated
+----Unallocated
+--Advanced SIMD and System register load/store and 64-bit move :
+---Advanced SIMD and floating-point 64-bit move :
+----Unallocated
+----Unallocated
+----Unallocated
+----Unallocated
+----VMOV (between two general-purpose registers and two single-precision registers) - From general-purpose registers variant
+----VMOV (between two general-purpose registers and a doubleword floating-point register) - From general-purpose registers variant
+----Unallocated
+----VMOV (between two general-purpose registers and two single-precision registers) - To general-purpose registers variant
+----VMOV (between two general-purpose registers and a doubleword floating-point register) - To general-purpose registers variant
+---System register 64-bit move :
+----Unallocated
+----MCRR
+----MRRC
+----
+---Advanced SIMD and floating-point load/store :
+----Unallocated
+----Unallocated
+----VSTM, VSTMDB, VSTMIA - Increment After variant
+----VSTM, VSTMDB, VSTMIA - Increment After variant
+----FSTMDBX, FSTMIAX - Increment After variant
+----VLDM, VLDMDB, VLDMIA - Increment After variant
+----VLDM, VLDMDB, VLDMIA - Increment After variant
+----FLDM*X (FLDMDBX, FLDMIAX) - Increment After variant
+----VSTR - Half-precision scalar variant
+----VSTR - Single-precision scalar variant
+----VSTR - Double-precision scalar variant
+----VLDR (immediate) - Half-precision scalar variant
+----VLDR (immediate) - Single-precision scalar variant
+----VLDR (immediate) - Double-precision scalar variant
+----Unallocated
+----VSTM, VSTMDB, VSTMIA - Decrement Before variant
+----VSTM, VSTMDB, VSTMIA - Decrement Before variant
+----FSTMDBX, FSTMIAX - Decrement Before variant
+----VLDM, VLDMDB, VLDMIA - Decrement Before variant
+----VLDM, VLDMDB, VLDMIA - Decrement Before variant
+----FLDM*X (FLDMDBX, FLDMIAX) - Decrement Before variant
+----VLDR (literal) - Half-precision scalar variant
+----VLDR (literal) - Single-precision scalar variant
+----VLDR (literal) - Double-precision scalar variant
+----Unallocated
+---System register load/store :
+----Unallocated
+----LDC (literal)
+----Unallocated
+----Unallocated
+----STC - Post-indexed variant
+----LDC (immediate) - Post-indexed variant
+----STC - Unindexed variant
+----LDC (immediate) - Unindexed variant
+----STC - Offset variant
+----LDC (immediate) - Offset variant
+----STC - Pre-indexed variant
+----LDC (immediate) - Pre-indexed variant
+---Unallocated
+---
+--Advanced SIMD and System register 32-bit move :
+---Unallocated
+---VMOV (between general-purpose register and half-precision)
+---VMOV (between general-purpose register and single-precision)
+---Unallocated
+---Unallocated
+---Unallocated
+---Unallocated
+---Floating-point move special register :
+----VMSR
+----VMRS
+---Advanced SIMD 8/16/32-bit element move/duplicate :
+----VMOV (general-purpose register to scalar)
+----VMOV (scalar to general-purpose register)
+----VDUP (general-purpose register)
+----Unallocated
+---Unallocated
+---System register 32-bit move :
+----MCR
+----MRC
+----
+--Floating-point data-processing :
+---Floating-point data-processing (two registers) :
+----Unallocated
+----Unallocated
+----VABS - Half-precision scalar variant
+----VMOV (register) - Single-precision scalar variant
+----VABS - Single-precision scalar variant
+----VMOV (register) - Double-precision scalar variant
+----VABS - Double-precision scalar variant
+----VNEG - Half-precision scalar variant
+----VSQRT - Half-precision scalar variant
+----VNEG - Single-precision scalar variant
+----VSQRT - Single-precision scalar variant
+----VNEG - Double-precision scalar variant
+----VSQRT - Double-precision scalar variant
+----Unallocated
+----VCVTB - Half-precision to single-precision variant
+----VCVTT - Half-precision to single-precision variant
+----VCVTB - Half-precision to double-precision variant
+----VCVTT - Half-precision to double-precision variant
+----VCVTB (BFloat16)
+----VCVTT (BFloat16)
+----VCVTB - Single-precision to half-precision variant
+----VCVTT - Single-precision to half-precision variant
+----VCVTB - Double-precision to half-precision variant
+----VCVTT - Double-precision to half-precision variant
+----VCMP
+----VCMPE
+----VCMP
+----VCMPE
+----VCMP
+----VCMPE
+----VCMP
+----VCMPE
+----VCMP
+----VCMPE
+----VCMP
+----VCMPE
+----VRINTR - Half-precision scalar variant
+----VRINTZ (floating-point) - Half-precision scalar variant
+----VRINTR - Single-precision scalar variant
+----VRINTZ (floating-point) - Single-precision scalar variant
+----VRINTR - Double-precision scalar variant
+----VRINTZ (floating-point) - Double-precision scalar variant
+----VRINTx (floating-point) - Half-precision scalar variant
+----Unallocated
+----VRINTx (floating-point) - Single-precision scalar variant
+----VCVT (between double-precision and single-precision) - Single-precision to double-precision variant
+----VRINTx (floating-point) - Double-precision scalar variant
+----VCVT (between double-precision and single-precision) - Double-precision to single-precision variant
+----VCVT (integer to floating-point, floating-point) - Half-precision scalar variant
+----VCVT (integer to floating-point, floating-point) - Single-precision scalar variant
+----VCVT (integer to floating-point, floating-point) - Double-precision scalar variant
+----Unallocated
+----Unallocated
+----Unallocated
+----VJCVT
+----VCVT (between floating-point and fixed-point, floating-point)
+----VCVT (between floating-point and fixed-point, floating-point)
+----VCVT (between floating-point and fixed-point, floating-point)
+----VCVTR
+----VCVT (floating-point to integer, floating-point)
+----VCVTR
+----VCVT (floating-point to integer, floating-point)
+----VCVTR
+----VCVT (floating-point to integer, floating-point)
+----VCVTR
+----VCVT (floating-point to integer, floating-point)
+----VCVTR
+----VCVT (floating-point to integer, floating-point)
+----VCVTR
+----VCVT (floating-point to integer, floating-point)
+----VCVT (between floating-point and fixed-point, floating-point)
+----VCVT (between floating-point and fixed-point, floating-point)
+----VCVT (between floating-point and fixed-point, floating-point)
+---Floating-point move immediate :
+----Unallocated
+----VMOV (immediate) - Half-precision scalar variant
+----VMOV (immediate) - Single-precision scalar variant
+----VMOV (immediate) - Double-precision scalar variant
+---Floating-point data-processing (three registers) :
+----Unallocated
+----VMLA (floating-point) - Half-precision scalar variant
+----VMLS (floating-point) - Half-precision scalar variant
+----VMLA (floating-point) - Single-precision scalar variant
+----VMLS (floating-point) - Single-precision scalar variant
+----VMLA (floating-point) - Double-precision scalar variant
+----VMLS (floating-point) - Double-precision scalar variant
+----VNMLS - Half-precision scalar variant
+----VNMLA - Half-precision scalar variant
+----VNMLS - Single-precision scalar variant
+----VNMLA - Single-precision scalar variant
+----VNMLS - Double-precision scalar variant
+----VNMLA - Double-precision scalar variant
+----VMUL (floating-point) - Half-precision scalar variant
+----VNMUL - Half-precision scalar variant
+----VMUL (floating-point) - Single-precision scalar variant
+----VNMUL - Single-precision scalar variant
+----VMUL (floating-point) - Double-precision scalar variant
+----VNMUL - Double-precision scalar variant
+----VADD (floating-point) - Half-precision scalar variant
+----VSUB (floating-point) - Half-precision scalar variant
+----VADD (floating-point) - Single-precision scalar variant
+----VSUB (floating-point) - Single-precision scalar variant
+----VADD (floating-point) - Double-precision scalar variant
+----VSUB (floating-point) - Double-precision scalar variant
+----VDIV - Half-precision scalar variant
+----VDIV - Single-precision scalar variant
+----VDIV - Double-precision scalar variant
+----VFNMS - Half-precision scalar variant
+----VFNMA - Half-precision scalar variant
+----VFNMS - Single-precision scalar variant
+----VFNMA - Single-precision scalar variant
+----VFNMS - Double-precision scalar variant
+----VFNMA - Double-precision scalar variant
+----VFMA - Half-precision scalar variant
+----VFMS - Half-precision scalar variant
+----VFMA - Single-precision scalar variant
+----VFMS - Single-precision scalar variant
+----VFMA - Double-precision scalar variant
+----VFMS - Double-precision scalar variant
+--Unallocated
+-Unconditional instructions :
+--Miscellaneous :
+---Unallocated
+---Change Process State :
+----SETEND
+----CPS, CPSID, CPSIE - Change mode variant
+----CPS, CPSID, CPSIE - Interrupt enable and change mode variant
+----Unallocated
+----Unallocated
+----Unallocated
+----CPS, CPSID, CPSIE - Interrupt disable and change mode variant
+---Unallocated
+---Unallocated
+---Unallocated
+---SETPAN
+---Unallocated
+---CONSTRAINED UNPREDICTABLE
+---Unallocated
+---Unallocated
+---Unallocated
+---Unallocated
+---Unallocated
+---Unallocated
+---Unallocated
+--Advanced SIMD data-processing :
+---Advanced SIMD three registers of the same length :
+----VFMA
+----VADD (floating-point)
+----VMLA (floating-point)
+----VCEQ (register) - A2
+----VMAX (floating-point)
+----VRECPS
+----VHADD
+----VAND (register)
+----VQADD
+----VRHADD
+----SHA1C
+----VHSUB
+----VBIC (register)
+----VQSUB
+----VCGT (register) - A1
+----VCGE (register) - A1
+----SHA1P
+----VFMS
+----VSUB (floating-point)
+----VMLS (floating-point)
+----Unallocated
+----VMIN (floating-point)
+----VRSQRTS
+----VSHL (register)
+----VADD (integer)
+----VORR (register)
+----VTST
+----VQSHL (register)
+----VMLA (integer)
+----VRSHL
+----VQRSHL
+----VQDMULH
+----SHA1M
+----VPADD (integer)
+----VMAX (integer)
+----VORN (register)
+----VMIN (integer)
+----VABD (integer)
+----VABA
+----SHA1SU0
+----VPADD (floating-point)
+----VMUL (floating-point)
+----VCGE (register) - A2
+----VACGE
+----VPMAX (floating-point)
+----VMAXNM
+----VEOR
+----VMUL (integer and polynomial)
+----SHA256H
+----VPMAX (integer)
+----VBSL
+----VPMIN (integer)
+----Unallocated
+----SHA256H2
+----VABD (floating-point)
+----VCGT (register) - A2
+----VACGT
+----VPMIN (floating-point)
+----VMINNM
+----VSUB (integer)
+----VBIT
+----VCEQ (register) - A1
+----VMLS (integer)
+----VQRDMULH
+----SHA256SU1
+----VQRDMLAH
+----VBIF
+----VQRDMLSH
+----Unallocated
+---Advanced SIMD two registers, or three registers of different lengths :
+----VEXT (byte elements)
+----Advanced SIMD two registers misc :
+-----VREV64
+-----VREV32
+-----VREV16
+-----Unallocated
+-----VPADDL
+-----AESE
+-----AESD
+-----AESMC
+-----AESIMC
+-----VCLS
+-----VSWP
+-----VCLZ
+-----VCNT
+-----VMVN (register)
+-----Unallocated
+-----VPADAL
+-----VQABS
+-----VQNEG
+-----VCGT (immediate #0)
+-----VCGE (immediate #0)
+-----VCEQ (immediate #0)
+-----VCLE (immediate #0)
+-----VCLT (immediate #0)
+-----VABS
+-----VNEG
+-----SHA1H
+-----VCVT (from single-precision to BFloat16, Advanced SIMD)
+-----VTRN
+-----VUZP
+-----VZIP
+-----VMOVN
+-----VQMOVN, VQMOVUN - Unsigned result variant
+-----VQMOVN, VQMOVUN - Signed result variant
+-----VSHLL
+-----SHA1SU1
+-----SHA256SU0
+-----VRINTN (Advanced SIMD)
+-----VRINTx (Advanced SIMD)
+-----VRINTA (Advanced SIMD)
+-----VRINTZ (Advanced SIMD)
+-----Unallocated
+-----VCVT (between half-precision and single-precision, Advanced SIMD)- Single-precision to half-precision variant
+-----VRINTM (Advanced SIMD)
+-----VCVT (between half-precision and single-precision, Advanced SIMD)- Half-precision to single-precision variant
+-----Unallocated
+-----VRINTP (Advanced SIMD)
+-----VCVTA (Advanced SIMD)
+-----VCVTN (Advanced SIMD)
+-----VCVTP (Advanced SIMD)
+-----VCVTM (Advanced SIMD)
+-----VRECPE
+-----VRSQRTE
+-----Unallocated
+-----VCVT (betweenFloating-point and integer, Advanced SIMD)
+----VTBL, VTBX
+----Advanced SIMD duplicate (scalar) :
+-----VDUP (scalar)
+-----Unallocated
+-----Unallocated
+-----Unallocated
+----Advanced SIMD three registers of different lengths :
+-----VADDL
+-----VADDW
+-----VSUBL
+-----VADDHN
+-----VSUBW
+-----VSUBHN
+-----VQDMLAL
+-----VABAL
+-----VQDMLSL
+-----VQDMULL
+-----VABDL (integer)
+-----VMLAL (integer)
+-----VMLSL (integer)
+-----VRADDHN
+-----VRSUBHN
+-----VMULL (integer and polynomial)
+-----Unallocated
+-----Unallocated
+-----Unallocated
+-----Unallocated
+----Advanced SIMD two registers and a scalar :
+-----VMLA (by scalar)
+-----VQDMLAL
+-----VMLAL (by scalar)
+-----VQDMLSL
+-----VMLS (by scalar)
+-----VQDMULL
+-----VMLSL (by scalar)
+-----VMUL (by scalar)
+-----Unallocated
+-----VMULL (by scalar)
+-----Unallocated
+-----VQDMULH
+-----VQRDMULH
+-----Unallocated
+-----VQRDMLAH
+-----VQRDMLSH
+---Advanced SIMD shifts and immediate generation :
+----Advanced SIMD one register and modified immediate :
+-----VMOV (immediate) - A1
+-----VMVN (immediate) - A1
+-----VORR (immediate) - A1
+-----VBIC (immediate) - A1
+-----VMOV (immediate) - A3
+-----VMVN (immediate) - A2
+-----VORR (immediate) - A2
+-----VBIC (immediate) - A2
+-----VMOV (immediate) - A4
+-----VMVN (immediate) - A3
+-----VMOV (immediate) - A5
+-----Unallocated
+----Advanced SIMD two registers and shift amount :
+-----VSHR
+-----VSRA
+-----VRSHR
+-----VRSRA
+-----VQSHL, VQSHLU (immediate) - VQSHL,quad,signed-result variant
+-----VQSHRN, VQSHRUN - Signed result variant
+-----VQRSHRN, VQRSHRUN - Signed result variant
+-----VSHLL
+-----VCVT (between floating-point and fixed-point, Advanced SIMD)
+-----VMOVL
+-----VSHL (immediate)
+-----VSHRN
+-----VRSHRN
+-----VSRI
+-----VSLI
+-----VQSHL, VQSHLU (immediate) - VQSHLU,quad,unsigned-result variant
+-----VQSHRN, VQSHRUN - Unsigned result variant
+-----VQRSHRN, VQRSHRUN - Unsigned result variant
+--Memory hints and barriers :
+---CONSTRAINED UNPREDICTABLE
+---CONSTRAINED UNPREDICTABLE
+---Barriers :
+----CONSTRAINED UNPREDICTABLE
+----CLREX
+----CONSTRAINED UNPREDICTABLE
+----DSB
+----SSBB
+----PSSBB
+----DMB
+----ISB
+----SB
+----CONSTRAINED UNPREDICTABLE
+---CONSTRAINED UNPREDICTABLE
+---Preload (immediate) :
+----Reserved hint, behaves as NOP
+----PLI (immediate, literal)
+----PLD (literal)
+----PLD, PLDW (immediate) - Preload write variant
+----PLD, PLDW (immediate) - Preload read variant
+---Preload (register) :
+----Reserved hint, behaves as NOP
+----PLI (register) - Shift or rotate by value variant
+----PLI (register) - Rotate right with extend variant
+----PLD, PLDW (register) - Preload write, optional shift or rotate variant
+----PLD, PLDW (register) - Preload write, rotate right with extend variant
+----PLD, PLDW (register) - Preload read, optional shift or rotate variant
+----PLD, PLDW (register) - Preload read, rotate right with extend variant
+---CONSTRAINED UNPREDICTABLE
+---Unallocated
+--Advanced SIMD element or structure load/store :
+---Advanced SIMD load/store multiple structures :
+----VST4 (multiple 4-element structures)
+----VST4 (multiple 4-element structures)
+----VST4 (multiple 4-element structures)
+----VST1 (multiple single elements)
+----VST1 (multiple single elements)
+----VST1 (multiple single elements)
+----VST2 (multiple 2-element structures)
+----VST2 (multiple 2-element structures)
+----VST2 (multiple 2-element structures)
+----VST3 (multiple 3-element structures)
+----VST3 (multiple 3-element structures)
+----VST3 (multiple 3-element structures)
+----VST1 (multiple single elements)
+----VST1 (multiple single elements)
+----VST1 (multiple single elements)
+----VST1 (multiple single elements)
+----VST1 (multiple single elements)
+----VST1 (multiple single elements)
+----VST2 (multiple 2-element structures)
+----VST2 (multiple 2-element structures)
+----VST2 (multiple 2-element structures)
+----VST1 (multiple single elements)
+----VST1 (multiple single elements)
+----VST1 (multiple single elements)
+----VLD4 (multiple 4-element structures)
+----VLD4 (multiple 4-element structures)
+----VLD4 (multiple 4-element structures)
+----VLD1 (multiple single elements)
+----VLD1 (multiple single elements)
+----VLD1 (multiple single elements)
+----VLD2 (multiple 2-element structures)
+----VLD2 (multiple 2-element structures)
+----VLD2 (multiple 2-element structures)
+----VLD3 (multiple 3-element structures)
+----VLD3 (multiple 3-element structures)
+----VLD3 (multiple 3-element structures)
+----Unallocated
+----VLD1 (multiple single elements)
+----VLD1 (multiple single elements)
+----VLD1 (multiple single elements)
+----VLD1 (multiple single elements)
+----VLD1 (multiple single elements)
+----VLD1 (multiple single elements)
+----Unallocated
+----VLD2 (multiple 2-element structures)
+----VLD2 (multiple 2-element structures)
+----VLD2 (multiple 2-element structures)
+----VLD1 (multiple single elements)
+----VLD1 (multiple single elements)
+----VLD1 (multiple single elements)
+---Advanced SIMD load single structure to all lanes :
+----Unallocated
+----VLD1 (single element to all lanes)
+----VLD1 (single element to all lanes)
+----VLD1 (single element to all lanes)
+----VLD2 (single 2-element structure to all lanes)
+----VLD2 (single 2-element structure to all lanes)
+----VLD2 (single 2-element structure to all lanes)
+----VLD3 (single 3-element structure to all lanes)
+----VLD3 (single 3-element structure to all lanes)
+----VLD3 (single 3-element structure to all lanes)
+----Unallocated
+----VLD4 (single 4-element structure to all lanes)
+----VLD4 (single 4-element structure to all lanes)
+----VLD4 (single 4-element structure to all lanes)
+---Advanced SIMD load/store single structure to one lane :
+----VST1 (single element from one lane)
+----VST1 (single element from one lane)
+----VST1 (single element from one lane)
+----VST2 (single 2-element structure from one lane)
+----VST2 (single 2-element structure from one lane)
+----VST2 (single 2-element structure from one lane)
+----VST3 (single 3-element structure from one lane)
+----VST3 (single 3-element structure from one lane)
+----VST3 (single 3-element structure from one lane)
+----VST4 (single 4-element structure from one lane)
+----VST4 (single 4-element structure from one lane)
+----VST4 (single 4-element structure from one lane)
+----VST1 (single element from one lane)
+----VST1 (single element from one lane)
+----VST1 (single element from one lane)
+----VST2 (single 2-element structure from one lane)
+----VST2 (single 2-element structure from one lane)
+----VST2 (single 2-element structure from one lane)
+----VST3 (single 3-element structure from one lane)
+----VST3 (single 3-element structure from one lane)
+----VST3 (single 3-element structure from one lane)
+----VST4 (single 4-element structure from one lane)
+----VST4 (single 4-element structure from one lane)
+----VST4 (single 4-element structure from one lane)
+----VST1 (single element from one lane)
+----VST1 (single element from one lane)
+----VST1 (single element from one lane)
+----VST2 (single 2-element structure from one lane)
+----VST2 (single 2-element structure from one lane)
+----VST2 (single 2-element structure from one lane)
+----VST3 (single 3-element structure from one lane)
+----VST3 (single 3-element structure from one lane)
+----VST3 (single 3-element structure from one lane)
+----VST4 (single 4-element structure from one lane)
+----VST4 (single 4-element structure from one lane)
+----VST4 (single 4-element structure from one lane)
+----VLD1 (single element to one lane)
+----VLD1 (single element to one lane)
+----VLD1 (single element to one lane)
+----VLD2 (single 2-element structure to one lane)
+----VLD2 (single 2-element structure to one lane)
+----VLD2 (single 2-element structure to one lane)
+----VLD3 (single 3-element structure to one lane)
+----VLD3 (single 3-element structure to one lane)
+----VLD3 (single 3-element structure to one lane)
+----VLD4 (single 4-element structure to one lane)
+----VLD4 (single 4-element structure to one lane)
+----VLD4 (single 4-element structure to one lane)
+----VLD1 (single element to one lane)
+----VLD1 (single element to one lane)
+----VLD1 (single element to one lane)
+----VLD2 (single 2-element structure to one lane)
+----VLD2 (single 2-element structure to one lane)
+----VLD2 (single 2-element structure to one lane)
+----VLD3 (single 3-element structure to one lane)
+----VLD3 (single 3-element structure to one lane)
+----VLD3 (single 3-element structure to one lane)
+----VLD4 (single 4-element structure to one lane)
+----VLD4 (single 4-element structure to one lane)
+----VLD4 (single 4-element structure to one lane)
+----VLD1 (single element to one lane)
+----VLD1 (single element to one lane)
+----VLD1 (single element to one lane)
+----VLD2 (single 2-element structure to one lane)
+----VLD2 (single 2-element structure to one lane)
+----VLD2 (single 2-element structure to one lane)
+----VLD3 (single 3-element structure to one lane)
+----VLD3 (single 3-element structure to one lane)
+----VLD3 (single 3-element structure to one lane)
+----VLD4 (single 4-element structure to one lane)
+----VLD4 (single 4-element structure to one lane)
+----VLD4 (single 4-element structure to one lane)
+--Unallocated
+--Unallocated
