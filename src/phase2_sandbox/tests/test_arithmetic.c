@@ -108,9 +108,103 @@ static void arith_run_insn(uint32_t insn, void *bitmap_ptr)
     // 2. Execute
     execute_insn_page_reg(insn_bytes, buf_length, NULL);
     
+    // if (last_insn_signum != 0) {
+    //     // Optional: Log crash
+    //     return; 
+    // }
+
     // 3. Compare Results
     const RegisterStates *b = &reg_state_base_slot[0];
     const RegisterStates *a = &reg_state_base_slot[1];
+
+    // printf("========== Register State Dump ==========\n");
+    // printf("Reg   | Before (b) | After (a)  | Change\n");
+    // printf("------|------------|------------|-------\n");
+    // printf("R0    | 0x%08X | 0x%08X | %s\n", b->r0,  a->r0,  (b->r0  != a->r0)  ? "*" : "");
+    // printf("R1    | 0x%08X | 0x%08X | %s\n", b->r1,  a->r1,  (b->r1  != a->r1)  ? "*" : "");
+    // printf("R2    | 0x%08X | 0x%08X | %s\n", b->r2,  a->r2,  (b->r2  != a->r2)  ? "*" : "");
+    // printf("R3    | 0x%08X | 0x%08X | %s\n", b->r3,  a->r3,  (b->r3  != a->r3)  ? "*" : "");
+    // printf("R4    | 0x%08X | 0x%08X | %s\n", b->r4,  a->r4,  (b->r4  != a->r4)  ? "*" : "");
+    // printf("R5    | 0x%08X | 0x%08X | %s\n", b->r5,  a->r5,  (b->r5  != a->r5)  ? "*" : "");
+    // printf("R6    | 0x%08X | 0x%08X | %s\n", b->r6,  a->r6,  (b->r6  != a->r6)  ? "*" : "");
+    // printf("R7    | 0x%08X | 0x%08X | %s\n", b->r7,  a->r7,  (b->r7  != a->r7)  ? "*" : "");
+    // printf("R8    | 0x%08X | 0x%08X | %s\n", b->r8,  a->r8,  (b->r8  != a->r8)  ? "*" : "");
+    // printf("R9    | 0x%08X | 0x%08X | %s\n", b->r9,  a->r9,  (b->r9  != a->r9)  ? "*" : "");
+    // printf("R10   | 0x%08X | 0x%08X | %s\n", b->r10, a->r10, (b->r10 != a->r10) ? "*" : "");
+    // printf("R11   | 0x%08X | 0x%08X | %s\n", b->r11, a->r11, (b->r11 != a->r11) ? "*" : "");
+    // printf("R12   | 0x%08X | 0x%08X | %s\n", b->r12, a->r12, (b->r12 != a->r12) ? "*" : "");
+    // printf("CPSR  | 0x%08X | 0x%08X | %s\n", b->cpsr, a->cpsr, (b->cpsr != a->cpsr) ? "*" : "");
+    // printf("=========================================\n");
+
+// --- [Debug Start] Register & CPSR Analysis (含Thumb检测) ---
+{
+    int i;
+    const uint32_t *old_gpr = (const uint32_t *)&b->r0;
+    const uint32_t *new_gpr = (const uint32_t *)&a->r0;
+    printf("test instruction: 0x%x\n", insn);
+    // 1. 打印通用寄存器 (GPR) 变化
+    for (i = 0; i <= 12; i++) {
+        if (old_gpr[i] != new_gpr[i]) {
+            printf("[RegDiff] R%-2d: 0x%08X -> 0x%08X\n", i, old_gpr[i], new_gpr[i]);
+        }
+    }
+
+    // 2. 重点分析 CPSR (状态寄存器)
+    if (b->cpsr != a->cpsr) {
+        uint32_t old_c = b->cpsr;
+        uint32_t new_c = a->cpsr;
+        uint32_t diff  = old_c ^ new_c; // 异或找出变化的位
+
+        printf("[RegDiff] *** CPSR Changed ***: 0x%08X -> 0x%08X\n", old_c, new_c);
+
+        // --- [新增] Thumb 状态检测 (Bit 5: T) ---
+        if (diff & (1 << 5)) {
+            int is_thumb = (new_c & (1 << 5));
+            printf("    [ISA]  Instruction Set Change: %s -> %s\n", 
+                   is_thumb ? "ARM" : "THUMB",   // 旧状态
+                   is_thumb ? "THUMB" : "ARM");  // 新状态
+        }
+
+        // --- 中断控制位分析 (Bit 7: I, Bit 6: F) ---
+        if (diff & (1 << 7)) {
+            int irq_masked = (new_c & (1 << 7));
+            printf("    [INT]  IRQ (I-bit) change: %s\n", 
+                   irq_masked ? "MASKED (Disable)" : "UNMASKED (Enable)");
+        }
+        if (diff & (1 << 6)) {
+            int fiq_masked = (new_c & (1 << 6));
+            printf("    [INT]  FIQ (F-bit) change: %s\n", 
+                   fiq_masked ? "MASKED (Disable)" : "UNMASKED (Enable)");
+        }
+
+        // --- 处理器模式分析 (Mode Bits 4:0) ---
+        if (diff & 0x1F) {
+            uint32_t old_mode = old_c & 0x1F;
+            uint32_t new_mode = new_c & 0x1F;
+            const char *mode_str = "UNKNOWN";
+
+            switch(new_mode) {
+                case 0x10: mode_str = "USR (EL0)"; break;
+                case 0x11: mode_str = "FIQ (EL1)"; break;
+                case 0x12: mode_str = "IRQ (EL1)"; break;
+                case 0x13: mode_str = "SVC (EL1)"; break;
+                case 0x17: mode_str = "ABT (EL1)"; break;
+                case 0x1B: mode_str = "UND (EL1)"; break;
+                case 0x1F: mode_str = "SYS (EL1)"; break;
+                default:   mode_str = "OTHER";     break;
+            }
+
+            printf("    [MODE] CPU Mode Switch: 0x%02X -> 0x%02X [%s]\n", old_mode, new_mode, mode_str);
+
+            if (old_mode == 0x10 && new_mode != 0x10) {
+                printf("    >>>> ENTER KERNEL (EL0 -> EL1) <<<<\n");
+            } else if (old_mode != 0x10 && new_mode == 0x10) {
+                printf("    <<<< EXIT KERNEL  (EL1 -> EL0) <<<<\n");
+            }
+        }
+    }
+}
+// --- [Debug End] ---
 
     bool gpr_changed =
         (b->r0  != a->r0 ) || (b->r1  != a->r1 ) || (b->r2  != a->r2 ) ||

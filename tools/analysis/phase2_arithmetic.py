@@ -2,6 +2,7 @@ import os
 import struct
 import sys
 import glob
+import argparse
 
 def parse_bitmap(data, size_bytes, num_bits):
     """
