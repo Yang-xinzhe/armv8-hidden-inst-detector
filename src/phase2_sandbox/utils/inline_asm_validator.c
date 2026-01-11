@@ -228,6 +228,121 @@ void test_predefined_instructions(void) {
     printf("PC:   0x%016lx -> 0x%016lx (Offset: %ld)\n", pc_b, pc_a, (long)(pc_a - pc_b));
 }
 
+#elif defined(TEST_T32_16BIT) || defined(TEST_T32_32BIT)
+/* ==========================================
+ * AArch32 (ARMv8-A T32/T16) Implementation
+ * ========================================== */
+
+ void test_predefined_instructions(void) {
+    uint32_t r0_before = 0, r1_before = 0, r2_before = 0, r3_before = 0;
+    uint32_t r4_before = 0, r5_before = 0, r6_before = 0, r7_before = 0, r8_before = 0, r9_before = 0;
+    uint32_t r0_after = 0, r1_after = 0, r2_after = 0, r3_after = 0;
+    uint32_t r4_after = 0, r5_after = 0, r6_after = 0, r7_after = 0, r8_after = 0, r9_after = 0;
+    uint32_t cpsr_before = 0, cpsr_after = 0;
+    uint32_t lr_before = 0, lr_after = 0;
+    uint32_t sp_before = 0, sp_after = 0;
+    uint32_t pc_before = 0, pc_after = 0;
+    
+    printf("Architecture: AArch32 (ARM)\n");
+    printf("Testing Instruction: 0x%08x\n", TEST_INSTRUCTION);
+
+    __asm__ __volatile__(/* 保存执行前的CPSR和特殊寄存器 */
+                "test_instruction:"     
+                 "str r9, %[r9_b] \n"
+                 "mov r9, #0    \n"
+                 "msr APSR_nzcvq, r9   \n"
+                 "mrs r9, cpsr \n"
+                 "str r9, %[cpsr_b] \n"
+                 "str lr, %[lr_b] \n"
+                 "str sp, %[sp_b] \n"
+                 "ldr r9, %[r9_b] \n"
+
+                 /* 保存执行前的普通寄存器 */
+                 "str r0, %[r0_b] \n"
+                 "str r1, %[r1_b] \n"
+                 "str r2, %[r2_b] \n"
+                 "str r3, %[r3_b] \n"
+                 "str r4, %[r4_b] \n"
+                 "str r5, %[r5_b] \n"
+                 "str r6, %[r6_b] \n"
+                 "str r7, %[r7_b] \n"
+                 "str r8, %[r8_b] \n"
+
+                 "mov r12, pc \n"
+                 "str r12, %[pc_b] \n"
+                 ".word " XSTR(TEST_INSTRUCTION) "\n"
+
+                 "mov r12, pc \n"
+                 "str r12, %[pc_a] \n"
+
+                 "str r0, %[r0_a] \n"
+                 "str r1, %[r1_a] \n"
+                 "str r2, %[r2_a] \n"
+                 "str r3, %[r3_a] \n"
+                 "str r4, %[r4_a] \n"
+                 "str r5, %[r5_a] \n"
+                 "str r6, %[r6_a] \n"
+                 "str r7, %[r7_a] \n"
+                 "str r8, %[r8_a] \n"
+                 "str r9, %[r9_a] \n"
+
+                 "mrs r9, cpsr \n"
+                 "str r9, %[cpsr_a] \n"
+                 "str lr, %[lr_a] \n"
+                 "str sp, %[sp_a] \n"
+
+                 : [r0_b] "=m"(r0_before), [r1_b] "=m"(r1_before),
+                   [r2_b] "=m"(r2_before), [r3_b] "=m"(r3_before),
+                   [r4_b] "=m"(r4_before), [r5_b] "=m"(r5_before),
+                   [r6_b] "=m"(r6_before), [r7_b] "=m"(r7_before),
+                   [r8_b] "=m"(r8_before), [r9_b] "=m"(r9_before),
+                   [r0_a] "=m"(r0_after), [r1_a] "=m"(r1_after),
+                   [r2_a] "=m"(r2_after), [r3_a] "=m"(r3_after),
+                   [r4_a] "=m"(r4_after), [r5_a] "=m"(r5_after),
+                   [r6_a] "=m"(r6_after), [r7_a] "=m"(r7_after),
+                   [r8_a] "=m"(r8_after), [r9_a] "=m"(r9_after),
+                   [cpsr_b] "=m"(cpsr_before), [cpsr_a] "=m"(cpsr_after),
+                   [lr_b] "=m"(lr_before), [lr_a] "=m"(lr_after),
+                   [sp_b] "=m"(sp_before), [sp_a] "=m"(sp_after),
+                   [pc_b] "=m"(pc_before), [pc_a] "=m"(pc_after)::"r9", "r12", "memory");
+
+    /* 打印寄存器状态 */
+    printf("Initial Registers:\n");
+    printf("  r0=0x%08x, r1=0x%08x, r2=0x%08x, r3=0x%08x\n", r0_before, r1_before, r2_before, r3_before);
+    printf("  r4=0x%08x, r5=0x%08x, r6=0x%08x, r7=0x%08x\n", r4_before, r5_before, r6_before, r7_before);
+    printf("  r8=0x%08x, r9=0x%08x\n", r8_before, r9_before);
+
+    printf("\nAfter Execution:\n");
+    printf("  r0=0x%08x %s\n", r0_after, (r0_before != r0_after) ? "[Changed]" : "");
+    printf("  r1=0x%08x %s\n", r1_after, (r1_before != r1_after) ? "[Changed]" : "");
+    printf("  r2=0x%08x %s\n", r2_after, (r2_before != r2_after) ? "[Changed]" : "");
+    printf("  r3=0x%08x %s\n", r3_after, (r3_before != r3_after) ? "[Changed]" : "");
+    printf("  r4=0x%08x %s\n", r4_after, (r4_before != r4_after) ? "[Changed]" : "");
+    printf("  r5=0x%08x %s\n", r5_after, (r5_before != r5_after) ? "[Changed]" : "");
+    printf("  r6=0x%08x %s\n", r6_after, (r6_before != r6_after) ? "[Changed]" : "");
+    printf("  r7=0x%08x %s\n", r7_after, (r7_before != r7_after) ? "[Changed]" : "");
+    printf("  r8=0x%08x %s\n", r8_after, (r8_before != r8_after) ? "[Changed]" : "");
+    printf("  r9=0x%08x %s\n", r9_after, (r9_before != r9_after) ? "[Changed]" : "");
+
+    printf("\n=== Special Registers ===\n");
+    printf("CPSR: 0x%08x -> 0x%08x %s\n", cpsr_before, cpsr_after,
+           (cpsr_before != cpsr_after) ? "[Changed]" : "");
+
+    if (cpsr_before != cpsr_after)
+    {
+        printf("  Flags Changed: ");
+        if ((cpsr_before & 0x80000000) != (cpsr_after & 0x80000000)) printf("N ");
+        if ((cpsr_before & 0x40000000) != (cpsr_after & 0x40000000)) printf("Z ");
+        if ((cpsr_before & 0x20000000) != (cpsr_after & 0x20000000)) printf("C ");
+        if ((cpsr_before & 0x10000000) != (cpsr_after & 0x10000000)) printf("V ");
+        printf("\n");
+    }
+
+    printf("LR:   0x%08x -> 0x%08x %s\n", lr_before, lr_after, (lr_before != lr_after) ? "[Changed]" : "");
+    printf("SP:   0x%08x -> 0x%08x %s\n", sp_before, sp_after, (sp_before != sp_after) ? "[Changed]" : "");
+    printf("PC:   0x%08x -> 0x%08x %s\n", pc_before, pc_after, (pc_after != pc_before + 8) ? "[Non-seq]" : "[Seq]");
+}
+
 #else
 
 /* ==========================================
@@ -248,6 +363,7 @@ void test_predefined_instructions(void) {
     printf("Testing Instruction: 0x%08x\n", TEST_INSTRUCTION);
 
     __asm__ __volatile__(/* 保存执行前的CPSR和特殊寄存器 */
+                "test_instruction:"
                  "str r9, %[r9_b] \n"
                  "msr cpsr_f, #0             \n"
                  "mrs r9, cpsr \n"
