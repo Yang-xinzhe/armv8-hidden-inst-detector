@@ -1,6 +1,6 @@
 ## pmu_user_module: enable user-space PMU access (EL0)
 
-Some phase2 experiments (e.g., `memaccess`) rely on reading PMU counters from **user space** to infer load/store behavior.
+Some phase2 experiments (e.g., `test_memory`) rely on reading PMU counters from **user space** to infer load/store behavior.
 
 On many ARMv8 platforms, EL0 access to PMU registers is disabled by default and must be enabled by the kernel (EL1). This directory provides a small kernel module that enables EL0 PMU access on all CPUs by configuring:
 
@@ -52,7 +52,7 @@ If insertion succeeds, the kernel log should show messages like:
 - `pmu_user: enabling PMU access from EL0 on all CPUs`
 - `pmu_user: CPUx pmu enabled for EL0`
 
-Then user-space PMU code (e.g., `pmu32`/`pmu64` demos or the `memaccess` analyzer) should be able to read counters without trapping.
+Then user-space PMU code (e.g., `src/phase2_sandbox/demos/demo_pmu.c` or the `test_memory` analyzer) should be able to read counters without trapping.
 
 ### Security note
 

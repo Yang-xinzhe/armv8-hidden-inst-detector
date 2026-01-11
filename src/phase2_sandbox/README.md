@@ -1,88 +1,80 @@
-## Phase 2: sandbox analysis
+## Phase 2: Sandbox Analysis
 
-This directory contains **phase2** programs used to further analyze instruction candidates after phase1 screening.
+This directory contains **phase2** programs used to further analyze instruction candidates after Phase 1 screening.
 
-There are two categories:
+The codebase is organized as follows:
 
-- **`sandbox_demos/`**: small demos/templates for validating known behaviors (good for sanity checks).
-- **Large-scale analyzers (this directory)**: programs that iterate candidate encodings and produce binary artifacts for offline analysis.
+- **`demos/`**: Small demos/templates for validating known behaviors (good for sanity checks).
+- **`tests/`**: Large-scale analysis programs that iterate candidate encodings and produce binary artifacts.
+- **`harness/`**: Assembly entry points for the sandbox.
+- **`utils/`**: Helper utilities (e.g., inline ASM validator).
 
-### Naming convention (recommended)
+### Workflow & Usage
 
-To keep things discoverable for newcomers:
+These programs are typically invoked by the central `dispatcher` (Stage 2) but can be run standalone.
 
-- **Demos/templates** live under `sandbox_demos/` and are meant for *known* instructions or minimal repros.
-- **Analyzers** live in the top-level `phase2_sandbox/` directory and are meant for *large-scale* runs over candidate sets.
-
-The current filenames keep historical compatibility. If you add new programs, prefer an explicit prefix like `analyze_` / `scan_` for large-scale analyzers and `demo_` for demos.
-
-### Input conventions
-
-Most analyzers read range files from a local directory named `hidden_insn/`:
-
-- `hidden_insn/resN.txt`
-- `hidden_insn/resN_timeout_decoded.txt` (for timeout/control-flow follow-up)
-
-For phase2 analyzers, ranges are typically parsed as **hex**:
-
+**Via Dispatcher (Recommended):**
+```bash
+./build/dispatcher -c 4 -x 0 -e ./build/test_arithmetic_a32 -P RK3588 -C A76 -I A32 -S 2
 ```
-[0xSTART, 0xEND]
+The dispatcher automatically:
+1. Locates input candidates from **Stage 1** (e.g., `experiments/targets/RK3588/A76/A32/01_screening`).
+2. Creates an output directory for **Stage 2** (e.g., `experiments/targets/RK3588/A76/A32/02_fuzzing/arithmetic`).
+3. Invokes the worker binary (e.g., `test_arithmetic_a32`) with `-i <input_dir> -o <output_dir> <file_number>`.
+
+**Standalone:**
+```bash
+./build/test_arithmetic_a32 -i experiments/targets/.../01_screening -o my_results/ 0
 ```
+(Processes `res0_complete.bin` / `candidates_0.bin` from the input directory).
 
-The exact parser is `sscanf(..., "[%x, %x]")` in these programs.
+### Analysis Programs (Tests)
 
-### Programs (large-scale analyzers)
+These programs live in `tests/` and are built into `build/test_*`.
 
-#### `fuzzer_arithmetic` (build target: `build/fuzzer_arithmetic`)
+#### `test_arithmetic` (Target: `build/test_arithmetic_a32`)
+- **Goal**: Detect instruction encodings that modify GPRs (R0-R14), CPSR, or SP-like state.
+- **Input**: Screening results (candidate bitmaps).
+- **Output**:
+  - `resN_complete.bin`: Bitmap planes for GPR/CPSR effects.
+  - `resN_cpsr.bin`: Logs of CPSR changes.
 
-- **Goal**: detect instruction encodings that modify GPRs/CPSR/SP-like state.
-- **Input**: `hidden_insn/resN.txt`
-- **Outputs** (created under `arithmetic_results/`):
-  - `resN_complete.bin`: bitmap planes for GPR/CPSR/(SP marker) effects
-  - `resN_cpsr.bin`: per-instruction CPSR change logs (when CPSR changes)
+#### `test_memory` (Target: `build/test_memory_a32`)
+- **Goal**: Detect instruction encodings that perform loads/stores using PMU retired events (L1D cache access/refill).
+- **Input**: Screening results.
+- **Output**: `resN_complete.bin` (Bitmap of memory-active instructions).
+- **Requirement**: **User-space PMU access** must be enabled (see `tools/kernel_modules/pmu_user_enable/`).
 
-#### `fuzzer_memaccess` (build target: `build/fuzzer_memaccess`)
+#### `test_simd` (Target: `build/test_simd_a32`)
+- **Goal**: Detect modifications to SIMD/FP registers (Q0-Q31) or FPSCR.
+- **Input**: Screening results.
+- **Output**: `resN_complete.bin` and FPSCR change logs.
 
-- **Goal**: detect instruction encodings that likely perform loads/stores by using PMU retired events.
-- **Input**: `hidden_insn/resN.txt`
-- **Outputs** (created under `memaccess_results/`):
-  - `resN_complete.bin`
-- **Note**: this relies on **user-space PMU access** being enabled on your platform. See `pmu_user_module/`.
+#### `test_control_flow` (Target: `build/test_control_flow_a32`)
+- **Goal**: Analyze candidates that caused timeouts in Phase 1 to classify them (loop, deadlock, branch out of sandbox).
+- **Input**: Timeout bitmaps from Phase 1.
+- **Output**: stdout classification.
 
-#### `fuzzer_simd` (build target: `build/fuzzer_simd`)
+### Utilities
 
-- **Goal**: detect instruction encodings that modify SIMD registers or FPSCR/FPSR state.
-- **Input**: `hidden_insn/resN.txt`
-- **Outputs** (created under `simd_results/`):
-  - `resN_complete.bin`
-  - `resN_cpsr.bin` (actually FPSCR change logs; filename kept for compatibility)
-
-#### `fuzzer_control_flow` (build target: `build/fuzzer_control_flow`)
-
-- **Goal**: analyze timeout-decoded candidates for control-flow anomalies (loops/deadlocks, jumps out of sandbox, undefined instruction, etc.).
-- **Input**: `hidden_insn/resN_timeout_decoded.txt`
-- **Output**: prints classification to stdout (no structured output file by default).
-
-### Single-instruction validation: `macro_valid` (build target: `build/macro_valid`)
-
-`macro_valid` is a lightweight helper to validate a **single** instruction encoding by embedding it via a preprocessor macro.
-
-Build with a specific encoding:
-
+#### `inline_asm_validator` (Target: `build/inline_asm_validator`)
+A lightweight helper to validate a **single** instruction encoding by embedding it via a preprocessor macro.
 ```bash
 make 0xe1a00001
+# Rebuilds build/inline_asm_validator with -DTEST_INSTRUCTION=0xe1a00001
 ```
 
-This rebuilds `build/macro_valid` with `-DTEST_INSTRUCTION=<hex>`.
+### Demos
 
-### PMU demos
+Located in `demos/`. Useful for verifying the environment.
+- `demo_regs.c`: Validates GPR detection logic.
+- `demo_pmu.c`: Validates PMU counter access (requires kernel module).
+- `demo_simd.c`: Validates SIMD register access.
+- `demo_control_flow.c`: Validates signal/timeout handling.
 
-- `pmu32.c`: AArch32 PMU demo (CP15-based), mainly for experiments/verification.
-- `pmu64.c`: AArch64 PMU demo (system-register-based).
+### Related Documentation
 
-### Related docs
-
-- `sandbox_demos/README.md`: purpose of each demo/template program
-- `pmu_user_module/README.md`: enabling EL0 PMU access via a kernel module
+- `demos/README.md` (if available): Purpose of each demo.
+- `../../tools/kernel_modules/pmu_user_enable/README.md`: Enabling EL0 PMU access.
 
 

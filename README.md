@@ -15,11 +15,14 @@ The codebase is organized into two phases:
   - CPU pinning helpers
   - bitmap utilities and PMU helpers
 - **`src/phase1_screening/`**:
-  - `dispatcher_screen.c`: schedules jobs across cores (fork + CPU affinity)
+  - `dispatcher_screen.c`: schedules jobs across cores (fork + CPU affinity). Supports intelligent path deduction based on Platform/Core/ISA/Stage.
   - `worker_screen.c`: executes ranges and writes bitmap results
+- **`experiments/`**:
+  - `inputs/`: Undefined instruction seeds (e.g., `A32_undef_seeds`).
+  - `targets/`: Results organized by Platform/Core/ISA/Stage.
 - **`src/phase2_sandbox/`**:
-  - analysis programs for large-scale validation/characterization (e.g., `fuzzer_arithmetic.c`, `fuzzer_memaccess.c`, `fuzzer_simd.c`, `fuzzer_control_flow.c`)
-  - `sandbox_demos/`: small demos/templates used to validate known behaviors
+  - analysis programs for large-scale validation/characterization (e.g., `test_arithmetic.c`, `test_memory.c`, `test_simd.c`, `test_control_flow.c`)
+  - `demos/`: small demos/templates used to validate known behaviors
   - `pmu_user_module/`: kernel module used to enable user-space PMU access (requires `insmod`)
 - **`res/`**: local experiment outputs (ignored by git by default; keep your results here).
 
@@ -35,43 +38,73 @@ Build everything:
 make
 ```
 
-Outputs are placed under `build/` (e.g., `build/dispatcher`, `build/worker`, ...).
+Outputs are placed under `build/` (e.g., `build/dispatcher`, `build/phase1_screen`, ...).
 Demo binaries are placed under `build/demo/`.
 
-### Phase 1: screening (dispatcher + worker)
+### Workflow & Usage
 
-The dispatcher expects an input directory containing files named `res%d.txt` (e.g., `res0.txt`, `res1.txt`, ...). Each file contains ranges per line:
+The project uses an intelligent `dispatcher` to manage both the screening (Phase 1) and fuzzing (Phase 2) workflows. It supports automatic path deduction to organize experiments by Platform, Core, and ISA.
 
-```
-[start, end]
-```
+#### Dispatcher Arguments
 
-In phase1, the current parser expects **decimal** numbers (C `sscanf(..., "[%u, %u]")`).
+| Flag | Description |
+| :--- | :--- |
+| `-c <count>` | Number of parallel worker processes. |
+| `-x <offset>` | Core ID offset (e.g., `-x 4` to start workers on core 4). |
+| `-e <exe>` | Path to the worker executable (Phase 1 or Phase 2 binary). |
+| `-P <plat>` | Platform name (e.g., `RK3588`, `RaspberryPi4`). |
+| `-C <core>` | CPU Core microarchitecture (e.g., `A76`, `A72`). |
+| `-I <isa>` | ISA under test (e.g., `A32`, `T32`). |
+| `-S <stage>` | Stage ID: `1` for Screening, `2` for Fuzzing. |
+| `-d <dir>` | (Optional) Override input directory. |
+| `-r <dir>` | (Optional) Override output directory. |
 
-Example:
+#### Automatic Path Deduction
+
+If `-P`, `-C`, `-I`, and `-S` are provided, the dispatcher automatically configures directories:
+
+- **Stage 1 (Screening)**:
+  - **Input**: `experiments/inputs/<ISA>_undef_seeds`
+  - **Output**: `experiments/targets/<P>/<C>/<I>/01_screening`
+- **Stage 2 (Fuzzing)**:
+  - **Input**: `experiments/targets/<P>/<C>/<I>/01_screening` (Takes output from Stage 1)
+  - **Output**: `experiments/targets/<P>/<C>/<I>/02_fuzzing/arithmetic`
+
+#### Example Commands
+
+**Phase 1: Screening**
+
+Run the screening worker on 4 cores (starting at core 0) for RK3588/A76/A32:
 
 ```bash
-mkdir -p results_A32 bitmap_results
-
 ./build/dispatcher \
-  -c 4 \
-  -o 0 \
-  -e ./build/worker \
-  -d results_A32 \
-  -r bitmap_results
+    -c 4 -x 0 \
+    -e ./build/phase1_screen \
+    -P RK3588 -C A76 -I A32 -S 1
 ```
 
-Expected outputs (per input file number `N`) under the output directory (default: `bitmap_results/`):
+This will read from `experiments/inputs/A32_undef_seeds` and write `candidates_*.bin` to `experiments/targets/RK3588/A76/A32/01_screening`.
 
-- `resN_complete.bin`
-- `resN_timeout.bin`
+**Phase 2: Arithmetic Fuzzing**
 
-### Phase 2: sandbox analysis & demos
+Run the arithmetic fuzzer using the results from Phase 1:
 
-Phase2 programs are located in `src/phase2_sandbox/`. Many of them read inputs from a directory named `hidden_insn/` by default (e.g., `hidden_insn/resN.txt`, `hidden_insn/resN_timeout_decoded.txt`). See:
+```bash
+./build/dispatcher \
+    -c 4 -x 0 \
+    -e ./build/test_arithmetic_a32 \
+    -P RK3588 -C A76 -I A32 -S 2
+```
 
+This will automatically pick up the screening results and output findings to `02_fuzzing/arithmetic`.
+
+### Phase 2: Sandbox Analysis Details
+
+Phase 2 programs (`test_arithmetic.c`, `test_memory.c`, etc.) are located in `src/phase2_sandbox/`. They are designed to be invoked by the dispatcher but can also be run standalone if input/output directories are manually specified.
+
+See internal documentation for details:
 - `src/phase2_sandbox/README.md`
-- `src/phase2_sandbox/sandbox_demos/README.md`
+- `src/phase2_sandbox/demos/README.md`
 - `src/phase2_sandbox/pmu_user_module/README.md`
 
 ### Notes on results (`res/`)
