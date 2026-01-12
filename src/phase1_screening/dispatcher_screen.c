@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
              else if (strstr(worker_path, "canary")) test_type = "canary";
              else if (strstr(worker_path, "control_flow")) test_type = "control_flow";
 
-             snprintf(derived_output, sizeof(derived_output), "experiments/targets/%s/%s/%s/02_fuzzing/%s", platform, core, isa, test_type);
+             snprintf(derived_output, sizeof(derived_output), "experiments/targets/%s/%s/%s/02_sandbox/%s", platform, core, isa, test_type);
         }
     } else {
          if (stage == 1 && cfg.phase1_output_dir[0] != '\0') strncpy(derived_output, cfg.phase1_output_dir, sizeof(derived_output)-1);
