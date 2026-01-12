@@ -8,6 +8,9 @@
 // #define NUM_CORES 4 // Removed: determined by args
 #define DEFAULT_CONFIG_PATH "config/project.conf"
 
+#define MOVE_UP(n) printf("\033[%dA", n)
+#define CLEAR_LINE printf("\033[2K")
+
 struct Worker {
     pid_t pid; // child pid
     int core_id;
@@ -20,44 +23,68 @@ struct Worker {
 
 // Update 1: Add input_dir to dashboard arguments for better status display
 void refresh_dashboard(struct Worker *workers, int num_cores, int processed, int max, int active, char *input_dir) {
-    printf("\033[H\033[2J"); // Refresh Screen
+    // 1. Calculate Dashboard total height (Header + Workers + Footer)
+    // Header ~6 lines, Footer 1 line, Body num_cores lines
+    int dashboard_height = 6 + num_cores + 1; 
 
-    printf("==================== Dashboard ======================\n");
-    // Update 2: Show config info
-    printf("    Target: %s | Cores: %d\n", input_dir, num_cores);
+    // 2. Move cursor up to start of dashboard
+    // NOTE: This assumes cursor is currently below the last line of the previous dashboard.
+    // For the very first call, we might print garbage if we move up blindly, but typically clear screen handles first frame.
+    // To be safe, we only move up if we are not clearing the whole screen.
+    // But since we want partial updates to avoid flicker, let's use MOVE_UP.
+    // A simple guard could be static int first_run = 1; if(first_run) { first_run=0; } else { MOVE_UP... }
+    
+    static int first_run = 1;
+    if (first_run) {
+        // First run: just print
+        first_run = 0;
+    } else {
+        MOVE_UP(dashboard_height); 
+    }
+
+    // 3. Print lines (Clear line first to avoid artifacts)
+    
+    // --- Header ---
+    CLEAR_LINE; printf("==================== Dashboard ======================\n");
+    CLEAR_LINE; printf("    Target: %s | Cores: %d\n", input_dir, num_cores);
+    
+    // --- Progress Bar ---
+    CLEAR_LINE; 
     printf("    Overall progress: [");
     int width = 40;
-    int pos = (processed * width) / max;
+    int pos = max > 0 ? (processed * width) / max : 0; // 防止除以0
     for(int i = 0 ; i < width ; ++i) {
         if(i < pos) printf("#");
         else printf(" ");
     }
     printf("] %d/%d (Active: %d)\n", processed, max, active);
-    printf("====================================================================\n");
-    printf(" Core | PID   | Input         | Elapsed  | Total | Status/Last message \n");
-    printf("------+-------+-------------+-------+------+------------------------\n");
+    
+    CLEAR_LINE; printf("====================================================================\n");
+    CLEAR_LINE; printf(" Core | PID   | Input         | Elapsed  | Total | Status/Last message \n");
+    CLEAR_LINE; printf("------+-------+-------------+-------+------+------------------------\n");
 
     time_t now = time(NULL);
 
-    for(int i = 0 ; i < num_cores ; i++) { // Use num_cores variable
+    // --- Workers ---
+    for(int i = 0 ; i < num_cores ; i++) {
         struct Worker *w = &workers[i];
-
+        CLEAR_LINE; // 关键：清除旧的一行
         if(w->busy){
             int elapsed = now - w->start_time;
-
-            char *color = "\033[0m";                     // White
-            if (elapsed > 3600) color = "\033[31m";      // Red
-            else if (elapsed > 60) color = "\033[33m";   // Yellow
-
+            char *color = "\033[0m";            
+            if (elapsed > 3600) color = "\033[31m";      
+            else if (elapsed > 60) color = "\033[33m";   
+            
+            // Limit message length
             printf("  %-3d | %-5d | res%-5d.txt | %s%4ds\033[0m  | %-4d | \033[36mProcessing...\033[0m\n", 
                 w->core_id, w->pid, w->file_number, color, elapsed, w->jobs_done);
         } else {
-            // Idle state demonstrate last message
             printf("  %-3d | ----- | ----------- |  ---  | %-4d | %s\n", 
                    w->core_id, w->jobs_done, w->last_msg);
         }
     }
-    printf("====================================================================\n");
+    CLEAR_LINE; printf("====================================================================\n");
+    
     fflush(stdout);
 }
 
@@ -133,9 +160,15 @@ int main(int argc, char *argv[]) {
         if (stage == 1) {
              snprintf(derived_output, sizeof(derived_output), "experiments/targets/%s/%s/%s/01_screening", platform, core, isa);
         } else if (stage == 2) {
-             // Assuming Arithmetic by default for Stage 2, or need finer grain?
-             // For now: 02_fuzzing/arithmetic. User can override with -r if doing memory.
-             snprintf(derived_output, sizeof(derived_output), "experiments/targets/%s/%s/%s/02_fuzzing/arithmetic", platform, core, isa);
+             // Deduce test type from worker name
+             const char *test_type = "arithmetic"; // Default
+             if (strstr(worker_path, "arithmetic")) test_type = "arithmetic";
+             else if (strstr(worker_path, "memory")) test_type = "memory";
+             else if (strstr(worker_path, "simd")) test_type = "simd";
+             else if (strstr(worker_path, "canary")) test_type = "canary";
+             else if (strstr(worker_path, "control_flow")) test_type = "control_flow";
+
+             snprintf(derived_output, sizeof(derived_output), "experiments/targets/%s/%s/%s/02_fuzzing/%s", platform, core, isa, test_type);
         }
     } else {
          if (stage == 1 && cfg.phase1_output_dir[0] != '\0') strncpy(derived_output, cfg.phase1_output_dir, sizeof(derived_output)-1);
