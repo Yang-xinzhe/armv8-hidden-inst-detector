@@ -31,7 +31,7 @@ else ifeq ($(MODE), t32_32)
     CFLAGS += -DTEST_T32_32BIT
     ASM_SUFFIX := t32_32
     BIN_SUFFIX := _t32_32
-	ARCH_FLAG  := -mthumb
+	ARCH_FLAG  := -marm
 endif
 
 CFLAGS += $(ARCH_FLAG)
