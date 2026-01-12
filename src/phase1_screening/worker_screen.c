@@ -56,6 +56,7 @@ void execution_boilerplate(void)
 }
 
 #elif defined(TEST_T32_32BIT)
+__attribute__((target("thumb"))) 
 void execution_boilerplate(void)
 {
     __asm__ __volatile__(
