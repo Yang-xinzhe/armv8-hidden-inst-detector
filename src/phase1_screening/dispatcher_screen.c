@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
     // Validation: Ensure all arguments are provided
     if (num_cores <= 0 || core_offset < 0 || worker_path == NULL || input_dir == NULL) {
         fprintf(stderr, "Error: Missing required arguments or unable to derive paths.\n");
-        fprintf(stderr, "Usage: %s -c <cores> -x <offset> -e <worker> -P <plat> -C <core> -I <isa> -S <stage>\n", argv[0]);
+        fprintf(stderr, "Usage: %s -c <cores> -x <offset> -e <worker> -P <plat> -C <core> -I <isa> -S <stage> [-d <input>] [-r <output>]\n", argv[0]);
         fprintf(stderr, "Derived Input: %s\n", input_dir ? input_dir : "(null)");
         fprintf(stderr, "Derived Output: %s\n", output_dir ? output_dir : "(null)");
         return 1;
