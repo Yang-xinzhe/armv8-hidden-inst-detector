@@ -232,7 +232,7 @@ void test_predefined_instructions(void) {
 /* ==========================================
  * AArch32 (ARMv8-A T32/T16) Implementation
  * ========================================== */
-
+__attribute__((target("thumb"))) 
  void test_predefined_instructions(void) {
     uint32_t r0_before = 0, r1_before = 0, r2_before = 0, r3_before = 0;
     uint32_t r4_before = 0, r5_before = 0, r6_before = 0, r7_before = 0, r8_before = 0, r9_before = 0;
@@ -270,7 +270,8 @@ void test_predefined_instructions(void) {
 
                  "mov r12, pc \n"
                  "str r12, %[pc_b] \n"
-                 ".word " XSTR(TEST_INSTRUCTION) "\n"
+
+                 ".inst.w " XSTR(TEST_INSTRUCTION) "\n"
 
                  "mov r12, pc \n"
                  "str r12, %[pc_a] \n"
